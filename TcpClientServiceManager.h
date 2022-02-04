@@ -14,15 +14,19 @@ class TcpClientServiceManager{
     private:
         int max_fd;
         int udp_fd;
-        std::list<TcpClient *>client_db;
+        std::list<TcpClient *>tcp_client_db;
         fd_set active_fd_set;
         fd_set backup_fd_set;
-        /*A semaphore shared between TcpClientServiceManager thread and
-        TcpClientDbManager thread for mutual exclusion */
-        sem_t bin_semaphore;
         int GetMaxFd();
         pthread_t *client_svc_mgr_thread;
         sem_t wait_for_thread_operation_to_complete;
+        sem_t sem0_1, sem0_2;
+        void (*client_msg_recvd)(const TcpClient *, unsigned char *, uint16_t);
+        void (*client_disconnected)(const TcpClient *);
+        pthread_rwlock_t rwlock;
+        bool listen_clients; 
+        void ForceUnblockSelect();
+
     public:
         TcpServer *tcp_server;
         TcpClientServiceManager(TcpServer *);
@@ -32,8 +36,14 @@ class TcpClientServiceManager{
         void StartTcpClientServiceManagerThreadInternal();
         void StopTcpClientServiceManagerThread();
 
-        void add_new_client_fd(TcpClient *);
-        void remove_client_fd(TcpClient *);
+        void AddNewClientFD(TcpClient *);
+        void RemoveClientFD(TcpClient *);
+        TcpClient *LookUpClientDB(uint32_t , uint16_t);
+        void Stop();
+        void SetClientMsgRecvCbk(
+                    void (*client_msg_recvd)(const TcpClient *, unsigned char *, uint16_t));
+        void SetClientDisconnectCbk(void (*client_disconnected)(const TcpClient *));
+        void SetListenAllClientsStatus(bool status);
 };
 
 #endif 

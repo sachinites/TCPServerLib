@@ -16,32 +16,32 @@
 
 TcpNewConnectionAcceptor::TcpNewConnectionAcceptor(TcpServer *TcpServer) {
 
-        this->tcp_server = TcpServer;
+    this->accept_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
-        this->accept_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP );
-        if (this->accept_fd < 0) {
-            printf ("Error : Could not create Accept FD\n");
-            exit(0);
-        }
+    if (this->accept_fd < 0) {
+        printf("Error : Could not create Accept FD\n");
+        exit(0);
+    }
 
-        this->accept_new_conn_thread = (pthread_t *)calloc ( 1 , sizeof(pthread_t));
-        
-        sem_init(&this->wait_for_thread_operation_to_complete, 0, 0);
+    this->accept_new_conn_thread = (pthread_t *)calloc(1, sizeof(pthread_t));
+    sem_init(&this->wait_for_thread_operation_to_complete, 0, 0);
+    pthread_rwlock_init(&this->rwlock, NULL);
+    this->accept_new_conn = true;
 
-        this->shared_binary_semaphore1 = &TcpServer->binary_semaphore_1;
+    this->tcp_server = TcpServer;
 }
 
  TcpNewConnectionAcceptor::~TcpNewConnectionAcceptor() {
 
-        close (this->accept_fd);
-        free(this->accept_new_conn_thread);
-        sem_destroy(&this->wait_for_thread_operation_to_complete);
+        assert (this->accept_fd == 0);
+        assert(!this->accept_new_conn_thread);
  }
 
 void
 TcpNewConnectionAcceptor::StartTcpNewConnectionAcceptorThreadInternal() {
 
     int opt = 1;
+    bool accept_new_conn;
     struct sockaddr_in server_addr;
     server_addr.sin_family      = AF_INET;
     server_addr.sin_port        = htons(this->tcp_server->port_no);
@@ -79,6 +79,7 @@ TcpNewConnectionAcceptor::StartTcpNewConnectionAcceptorThreadInternal() {
 
     while (true) {
 
+        pthread_testcancel();
         comm_socket_fd =  accept (this->accept_fd,
                                                         (struct sockaddr *)&client_addr, &addr_len);
 
@@ -87,21 +88,21 @@ TcpNewConnectionAcceptor::StartTcpNewConnectionAcceptorThreadInternal() {
             continue;
         }
 
+        pthread_rwlock_rdlock(&this->rwlock);
+        accept_new_conn = this->accept_new_conn;
+        pthread_rwlock_unlock(&this->rwlock);
 
-        sem_wait(this->shared_binary_semaphore1);
+        if (!accept_new_conn) {
+            close(comm_socket_fd);
+            continue;
+        }
 
-        /* Inspect TcpServer Attributes here */
-
-        sem_post(this->shared_binary_semaphore1);
-
-
-
-        TcpClient tcp_client;
-        tcp_client.comm_fd = comm_socket_fd;
-        tcp_client.ip_addr = client_addr.sin_addr.s_addr;
-        tcp_client.port_no =  client_addr.sin_port;
-        this->tcp_server->tcp_client_db_mgr->NewClientCreationRequest
-            (&tcp_client, TCP_DB_MGR_NEW_CLIENT_CREATE);
+        TcpClient *tcp_client = new TcpClient();
+        tcp_client->comm_fd = comm_socket_fd;
+        tcp_client->ip_addr = client_addr.sin_addr.s_addr;
+        tcp_client->port_no =  client_addr.sin_port;
+        this->client_connected(tcp_client);
+        this->tcp_server->CreateNewClientRequestSubmission (tcp_client);
     }
 }
 
@@ -111,6 +112,9 @@ tcp_listen_for_new_connections(void *arg) {
     TcpNewConnectionAcceptor *tcp_new_conn_acc = 
             (TcpNewConnectionAcceptor *)arg;
 
+    pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+    pthread_setcanceltype( PTHREAD_CANCEL_DEFERRED, NULL);
+
     tcp_new_conn_acc->StartTcpNewConnectionAcceptorThreadInternal();
     return NULL;
 }
@@ -119,11 +123,49 @@ tcp_listen_for_new_connections(void *arg) {
   TcpNewConnectionAcceptor::StartTcpNewConnectionAcceptorThread() {
 
       pthread_attr_t attr;
+
+      pthread_attr_init(&attr);
       pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 
-      pthread_create(this->accept_new_conn_thread, &attr, tcp_listen_for_new_connections, (void *)this);
-
+      if (pthread_create(this->accept_new_conn_thread, &attr,           tcp_listen_for_new_connections, (void *)this)) {
+          printf ("%s() Thread Creation failed, error = %d\n", __FUNCTION__, errno);
+          exit(0);
+      }
       sem_wait (&this->wait_for_thread_operation_to_complete);
       printf ("TcpNewConnectionAcceptorThread Started\n");
   }
 
+void
+TcpNewConnectionAcceptor::SetAcceptNewConnectionStatus(bool status) {
+
+    pthread_rwlock_wrlock(&this->rwlock);
+    this->accept_new_conn = status;
+    pthread_rwlock_unlock(&this->rwlock);
+}
+
+void 
+TcpNewConnectionAcceptor::SetClientConnectCbk(
+        void (*client_connected)(const TcpClient *)) {
+
+    this->client_connected = client_connected;
+}
+
+void
+TcpNewConnectionAcceptor::Stop() {
+
+    this->StopTcpNewConnectionAcceptorThread();
+    close(this->accept_fd);
+    this->accept_fd = 0;
+    sem_destroy(&this->wait_for_thread_operation_to_complete);
+    pthread_rwlock_destroy(&this->rwlock);
+    delete this;
+}
+
+void
+TcpNewConnectionAcceptor::StopTcpNewConnectionAcceptorThread() {
+
+    pthread_cancel(*this->accept_new_conn_thread);
+    pthread_join(*this->accept_new_conn_thread, NULL);
+    free(this->accept_new_conn_thread);
+    this->accept_new_conn_thread = NULL;
+}

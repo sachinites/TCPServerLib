@@ -30,24 +30,28 @@ class TcpClientDbRequest{
 class TcpClientDbManager {
 
     private:
-    /* A semaphore shared between TcpNewConnectionAcceptor thread and
-        TcpClientDbManager thread for mutual exclusion */
-        sem_t *shared_binary_semaphore1;
-    /* A semaphore shared between TcpClientServiceManager thread and
-        TcpClientDbManager thread for mutual exclusion */
-        sem_t *shared_binary_semaphore2;
-
+    
         std::list<TcpClient *> tcp_client_db;
-
         sem_t wait_for_thread_operation_to_complete;
+        sem_t sem0_1, sem0_2;
+        
+        pthread_t *client_db_mgr_thread;    
 
-        pthread_t *client_db_mgr_thread;
-
-        std::vector<TcpClientDbRequest *> request_q;
+        std::list<TcpClientDbRequest *> request_q;
         pthread_mutex_t request_q_mutex;
         pthread_cond_t request_q_cv;
 
         void ProcessRequest(TcpClientDbRequest *);
+        void (*client_disconnected)(const TcpClient *);
+        void (*client_ka_pending)(const TcpClient *);
+
+        /* Client DB mgmt functions */
+        void AddNewClient(TcpClient *);
+        void DeleteClient(TcpClient *);
+        void DeleteAllClients();
+        void UpdateClient(TcpClient *);
+        TcpClient * LookUpClientDB(uint32_t, uint16_t);
+
 
     public:
         TcpServer *tcp_server;  /* Back pointer to owning Server */
@@ -58,8 +62,16 @@ class TcpClientDbManager {
         void StartClientDbManagerThreadInternal();
         void StopClientDbManagerThread();
 
-        void NewClientCreationRequest
-            (TcpClient *tcp_client_template, ClientDBRequestOpnCode code);
+        void EnqueClientProcessingRequest
+            (TcpClient *tcp_client, ClientDBRequestOpnCode code);
+
+        void Stop();
+
+        void
+        SetClientDisconnectCbk(void (*client_disconnected)(const TcpClient *));
+        void
+        SetClientKAPending(void (*client_ka_pending)(const TcpClient *));
+
 };
 
 #endif 

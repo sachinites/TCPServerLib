@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+#define MAX_CLIENT_BUFFER_SIZE 512
+
 class TcpClient {
 
     public :
@@ -13,6 +15,8 @@ class TcpClient {
         TcpClient();
         TcpClient (TcpClient *);
         ~TcpClient();
+        void Abort();
+        unsigned char recv_buffer[MAX_CLIENT_BUFFER_SIZE];
 };
 
 #endif

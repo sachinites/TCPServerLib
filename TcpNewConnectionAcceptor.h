@@ -11,10 +11,9 @@ class TcpNewConnectionAcceptor {
         int accept_fd;
         pthread_t *accept_new_conn_thread;
         sem_t wait_for_thread_operation_to_complete;
-
-        /* A semaphore shared between TcpNewConnectionAcceptor thread and
-        TcpClientDbManager thread for mutual exclusion */
-        sem_t *shared_binary_semaphore1;
+        pthread_rwlock_t rwlock;
+        bool accept_new_conn;
+        void (*client_connected)(const TcpClient *);
 
     public:
         TcpServer *tcp_server;  /* Back pointer to owning Server */
@@ -28,6 +27,9 @@ class TcpNewConnectionAcceptor {
         void SetSharedSemaphore(sem_t *);
 
         void StartTcpNewConnectionAcceptorThreadInternal();
+        void Stop();
+        void SetAcceptNewConnectionStatus(bool);
+        void SetClientConnectCbk(void (*client_connected)(const TcpClient *));
 };
 
 #endif 
