@@ -179,7 +179,7 @@ TcpClientServiceManager::LookUpClientDB(uint32_t ip_addr, uint16_t port_no) {
 }
 
 void
-TcpClientServiceManager::AddNewClientFD(TcpClient *tcp_client) {
+TcpClientServiceManager::ClientFDStartListen(TcpClient *tcp_client) {
 
     ForceUnblockSelect();
     
@@ -198,7 +198,7 @@ TcpClientServiceManager::AddNewClientFD(TcpClient *tcp_client) {
 }
 
 void
-TcpClientServiceManager::RemoveClientFD(TcpClient *tcp_client) {
+TcpClientServiceManager::ClientFDStopListen(TcpClient *tcp_client) {
 
     ForceUnblockSelect();
 

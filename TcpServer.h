@@ -51,8 +51,8 @@ public:
     void CreateDeleteClientRequestSubmission(TcpClient *tcp_client);
 
     /* To Pass the Request to TcpClientServiceMgr, this is Synchronous */
-    void AddNewClientFD(TcpClient *tcp_client);
-    void RemoveClientFD(TcpClient *tcp_client);
+    void ClientFDStartListen(TcpClient *tcp_client);
+    void ClientFDStopListen(TcpClient *tcp_client);
     void StopListeningAllClients();
 };
 

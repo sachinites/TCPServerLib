@@ -36,8 +36,8 @@ class TcpClientServiceManager{
         void StartTcpClientServiceManagerThreadInternal();
         void StopTcpClientServiceManagerThread();
         void StopListeningAllClients();
-        void AddNewClientFD(TcpClient *);
-        void RemoveClientFD(TcpClient *);
+        void ClientFDStartListen(TcpClient *);
+        void ClientFDStopListen(TcpClient *);
         TcpClient *LookUpClientDB(uint32_t , uint16_t);
         void Stop();
         void SetClientMsgRecvCbk(

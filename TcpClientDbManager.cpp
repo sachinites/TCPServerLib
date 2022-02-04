@@ -63,13 +63,13 @@ TcpClientDbManager::AddNewClient(TcpClient *tcp_client) {
 
     assert(!this->LookUpClientDB(tcp_client->ip_addr, tcp_client->port_no));
     this->tcp_client_db.push_back(tcp_client);
-    this->tcp_server->AddNewClientFD(tcp_client);
+    this->tcp_server->ClientFDStartListen(tcp_client);
 }
 
 void
 TcpClientDbManager::DeleteClient(TcpClient *tcp_client) {
     
-    this->tcp_server->RemoveClientFD(tcp_client);
+    this->tcp_server->ClientFDStopListen(tcp_client);
     this->tcp_client_db.remove(tcp_client);
     tcp_client->Abort();
 }

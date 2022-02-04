@@ -159,15 +159,15 @@ TcpServer::CreateDeleteClientRequestSubmission(TcpClient *tcp_client) {
 }
 
 void
-TcpServer::AddNewClientFD(TcpClient *tcp_client) {
+TcpServer::ClientFDStartListen(TcpClient *tcp_client) {
 
-    this->tcp_client_svc_mgr->AddNewClientFD(tcp_client);
+    this->tcp_client_svc_mgr->ClientFDStartListen(tcp_client);
 }
 
 void
-TcpServer::RemoveClientFD(TcpClient *tcp_client) {
+TcpServer::ClientFDStopListen(TcpClient *tcp_client) {
 
-    this->tcp_client_svc_mgr->RemoveClientFD(tcp_client);
+    this->tcp_client_svc_mgr->ClientFDStopListen(tcp_client);
 }
 
 void
