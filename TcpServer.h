@@ -52,7 +52,8 @@ public:
 
     /* To Pass the Request to TcpClientServiceMgr, this is Synchronous */
     void ClientFDStartListen(TcpClient *tcp_client);
-    void ClientFDStopListen(TcpClient *tcp_client);
+    TcpClient* ClientFDStopListen(uint32_t , uint16_t);
+    void AbortClient(uint32_t , uint16_t);
     void StopListeningAllClients();
 };
 

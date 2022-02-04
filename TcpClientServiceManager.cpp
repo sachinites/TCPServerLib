@@ -58,7 +58,7 @@ void
 TcpClientServiceManager::StartTcpClientServiceManagerThreadInternal() {
 
     int rcv_bytes;
-    TcpClient *tcp_client;
+    TcpClient *tcp_client, *next_tcp_client;
     struct sockaddr_in client_addr;
     unsigned char dummy_msg;
     std::list<TcpClient *>::iterator it;
@@ -87,9 +87,10 @@ TcpClientServiceManager::StartTcpClientServiceManagerThreadInternal() {
             continue;
         }
 
-        for (it = this->tcp_client_db.begin(); it != this->tcp_client_db.end(); ++it){
+        for (it = this->tcp_client_db.begin(); it != this->tcp_client_db.end(); tcp_client = next_tcp_client){
 
-                tcp_client = *it;
+                next_tcp_client = *(++it);
+                if (!tcp_client) break;
 
                 if (FD_ISSET(tcp_client->comm_fd, &this->active_fd_set)) {
                     
@@ -103,6 +104,7 @@ TcpClientServiceManager::StartTcpClientServiceManagerThreadInternal() {
                         this->client_disconnected(tcp_client);
                         /* Remove FD from fd_set otherwise, select will go in infinite loop*/
                         FD_CLR(tcp_client->comm_fd, &this->backup_fd_set);
+                        this->tcp_client_db.remove(tcp_client);
                         this->tcp_server->CreateDeleteClientRequestSubmission(tcp_client);
                     }
                     else {
@@ -211,7 +213,36 @@ TcpClientServiceManager::ClientFDStopListen(TcpClient *tcp_client) {
     max_fd = GetMaxFd();
 
     FD_CLR(tcp_client->comm_fd, &this->backup_fd_set);
+    this->client_disconnected(tcp_client);
     sem_post(&this->sem0_2);
+}
+
+/* Overloaded fn */
+TcpClient*
+TcpClientServiceManager::ClientFDStopListen(uint32_t ip_addr, uint16_t port_no) {
+
+    TcpClient *tcp_client;
+
+    ForceUnblockSelect();
+
+    sem_wait(&this->sem0_1);
+
+    tcp_client = this->LookUpClientDB(ip_addr, port_no);
+    
+    if (!tcp_client) {
+        sem_post(&this->sem0_2);
+        return NULL;
+    }
+
+    this->tcp_client_db.remove(tcp_client);
+
+    /* Now Update FDs */
+    max_fd = GetMaxFd();
+
+    FD_CLR(tcp_client->comm_fd, &this->backup_fd_set);
+    this->client_disconnected(tcp_client);
+    sem_post(&this->sem0_2);
+    return tcp_client;
 }
 
 void

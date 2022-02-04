@@ -38,7 +38,8 @@ class TcpClientServiceManager{
         void StopListeningAllClients();
         void ClientFDStartListen(TcpClient *);
         void ClientFDStopListen(TcpClient *);
-        TcpClient *LookUpClientDB(uint32_t , uint16_t);
+        TcpClient* ClientFDStopListen(uint32_t , uint16_t);
+        TcpClient* LookUpClientDB(uint32_t , uint16_t);
         void Stop();
         void SetClientMsgRecvCbk(
                     void (*client_msg_recvd)(const TcpClient *, unsigned char *, uint16_t));

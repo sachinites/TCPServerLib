@@ -69,7 +69,7 @@ TcpClientDbManager::AddNewClient(TcpClient *tcp_client) {
 void
 TcpClientDbManager::DeleteClient(TcpClient *tcp_client) {
     
-    this->tcp_server->ClientFDStopListen(tcp_client);
+   // this->tcp_server->ClientFDStopListen(tcp_client);
     this->tcp_client_db.remove(tcp_client);
     tcp_client->Abort();
 }

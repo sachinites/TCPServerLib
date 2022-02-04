@@ -164,14 +164,25 @@ TcpServer::ClientFDStartListen(TcpClient *tcp_client) {
     this->tcp_client_svc_mgr->ClientFDStartListen(tcp_client);
 }
 
-void
-TcpServer::ClientFDStopListen(TcpClient *tcp_client) {
+TcpClient* 
+TcpServer::ClientFDStopListen(uint32_t ip_addr, uint16_t port_no) {
 
-    this->tcp_client_svc_mgr->ClientFDStopListen(tcp_client);
+    return this->tcp_client_svc_mgr->ClientFDStopListen(ip_addr, port_no);
 }
 
 void
 TcpServer::StopListeningAllClients() {
 
     this->tcp_client_svc_mgr->StopListeningAllClients();
+}
+
+void 
+TcpServer::AbortClient(uint32_t ip_addr, uint16_t port_no) {
+
+    TcpClient *tcp_client = this->tcp_client_svc_mgr->ClientFDStopListen(ip_addr, port_no);
+    if (!tcp_client) {
+        printf ("Error : Client do not exist\n");
+        return;
+    }
+    this->CreateDeleteClientRequestSubmission(tcp_client);
 }
