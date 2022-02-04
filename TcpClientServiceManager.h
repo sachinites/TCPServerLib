@@ -26,7 +26,7 @@ class TcpClientServiceManager{
         pthread_rwlock_t rwlock;
         bool listen_clients; 
         void ForceUnblockSelect();
-
+        void TcpClientMigrate(TcpClient *);
     public:
         TcpServer *tcp_server;
         TcpClientServiceManager(TcpServer *);

@@ -84,6 +84,29 @@ TcpServer::SetAcceptNewConnectionStatus(bool status) {
 }
 
 void
+TcpServer::SetClientCreationMode(bool status) {
+
+    if (status &&
+        IS_BIT_SET(this->state_flags, TCP_SERVER_CREATE_MULTI_THREADED_CLIENT)) {
+            return;
+     }
+
+     if (!status && 
+          !IS_BIT_SET(this->state_flags, TCP_SERVER_CREATE_MULTI_THREADED_CLIENT)) {
+              return;
+    }
+
+    this->tcp_client_db_mgr ->SetClientCreationMode(status);
+
+    if (status) {
+        SET_BIT(this->state_flags, TCP_SERVER_CREATE_MULTI_THREADED_CLIENT);
+    }
+    else {
+        UNSET_BIT32(this->state_flags, TCP_SERVER_CREATE_MULTI_THREADED_CLIENT);
+    }
+}
+
+void
 TcpServer::SetListenAllClientsStatus(bool status) {
 
     if (status &&

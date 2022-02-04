@@ -27,7 +27,6 @@ TcpNewConnectionAcceptor::TcpNewConnectionAcceptor(TcpServer *TcpServer) {
     sem_init(&this->wait_for_thread_operation_to_complete, 0, 0);
     pthread_rwlock_init(&this->rwlock, NULL);
     this->accept_new_conn = true;
-
     this->tcp_server = TcpServer;
 }
 
@@ -42,6 +41,7 @@ TcpNewConnectionAcceptor::StartTcpNewConnectionAcceptorThreadInternal() {
 
     int opt = 1;
     bool accept_new_conn;
+    bool create_multi_threaded_client;
     struct sockaddr_in server_addr;
     server_addr.sin_family      = AF_INET;
     server_addr.sin_port        = htons(this->tcp_server->port_no);

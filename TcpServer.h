@@ -15,7 +15,8 @@ class TcpClient;
 #define TCP_SERVER_RUNNING (1)
 #define TCP_SERVER_NOT_ACCEPTING_NEW_CONNECTIONS (2)
 #define TCP_SERVER_NOT_LISTENING_CLIENTS (3)
-#define TCP_SERVER_STATE_MAX (4)
+#define TCP_SERVER_CREATE_MULTI_THREADED_CLIENT (4)
+#define TCP_SERVER_STATE_MAX (5)
 
 class TcpServer {
 
@@ -38,6 +39,7 @@ public:
     void Stop();
     uint32_t GetStateFlags();
     void SetAcceptNewConnectionStatus(bool);
+    void SetClientCreationMode(bool);
     void SetListenAllClientsStatus(bool);
     void SetServerNotifCallbacks(void (*client_connected)(const TcpClient *), 
                                                     void (*client_disconnected)(const TcpClient *),

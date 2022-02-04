@@ -287,3 +287,8 @@ TcpClientServiceManager::StopTcpClientServiceManagerThread() {
     free(this->client_svc_mgr_thread);
     this->client_svc_mgr_thread = NULL;
 }
+
+void
+TcpClientServiceManager::TcpClientMigrate(TcpClient *) {
+
+}
