@@ -35,6 +35,7 @@ TcpServer::Start() {
     this->tcp_client_svc_mgr->StartTcpClientServiceManagerThread();
 
     SET_BIT(this->state_flags, TCP_SERVER_RUNNING);
+    printf ("Tcp Server is Up and Running\nOk.\n");
 }
 
 void

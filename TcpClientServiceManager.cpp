@@ -76,14 +76,11 @@ TcpClientServiceManager::StartTcpClientServiceManagerThreadInternal() {
         pthread_testcancel();
 
         memcpy (&this->active_fd_set, &this->backup_fd_set, sizeof(fd_set));
-        printf ("TcpClientServiceManager blocked on select\n");
-        select(this->max_fd + 1 , &this->active_fd_set, NULL, NULL, NULL);
 
-        printf ("TcpClientServiceManager unblocked from select\n");
+        select(this->max_fd + 1 , &this->active_fd_set, NULL, NULL, NULL);
 
         if (FD_ISSET(this->udp_fd, &this->active_fd_set)) {
 
-            printf ("UDP FD invoked\n");
             recvfrom(this->udp_fd, &dummy_msg, 1, 0 , (struct sockaddr *)&client_addr, &addr_len);
             sem_post(&this->sem0_1);
             sem_wait(&this->sem0_2);
@@ -104,7 +101,6 @@ TcpClientServiceManager::StartTcpClientServiceManagerThreadInternal() {
 
                     if (rcv_bytes == 0) {
                         this->client_disconnected(tcp_client);
-                        printf ("Calling CreateDeleteClientRequestSubmission for client %p\n", tcp_client);
                         /* Remove FD from fd_set otherwise, select will go in infinite loop*/
                         FD_CLR(tcp_client->comm_fd, &this->backup_fd_set);
                         this->tcp_server->CreateDeleteClientRequestSubmission(tcp_client);

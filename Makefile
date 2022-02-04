@@ -1,13 +1,19 @@
 CC=g++
 CFLAGS=-g
-TARGET:testapp.exe
+TARGET:testapp.exe tcp_client.exe
 LIBS=-lpthread -lrt
 
 testapp.exe:TcpClient.o testapp.o TcpClientDbManager.o TcpClientServiceManager.o TcpNewConnectionAcceptor.o TcpServer.o network_utils.o
 	${CC} ${CFLAGS} TcpClient.o testapp.o TcpClientDbManager.o TcpClientServiceManager.o TcpNewConnectionAcceptor.o TcpServer.o network_utils.o -o testapp.exe ${LIBS}
 
+tcp_client.exe:tcp_client.o
+	${CC} ${CFLAGS} tcp_client.o -o tcp_client.exe
+	
 TcpClient.o:TcpClient.cpp
 	${CC} ${CFLAGS} -c TcpClient.cpp -o TcpClient.o
+
+tcp_client.o:tcp_client.cpp
+	${CC} ${CFLAGS} -c tcp_client.cpp -o tcp_client.o
 
 testapp.o:testapp.cpp
 	${CC} ${CFLAGS} -c testapp.cpp -o testapp.o
