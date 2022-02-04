@@ -34,7 +34,7 @@ class TcpClientDbManager {
         std::list<TcpClient *> tcp_client_db;
         sem_t wait_for_thread_operation_to_complete;
         sem_t sem0_1, sem0_2;
-        
+
         pthread_t *client_db_mgr_thread;    
 
         std::list<TcpClientDbRequest *> request_q;
@@ -51,7 +51,7 @@ class TcpClientDbManager {
         void DeleteAllClients();
         void UpdateClient(TcpClient *);
         TcpClient * LookUpClientDB(uint32_t, uint16_t);
-
+        void PurgeRequestQueue();
 
     public:
         TcpServer *tcp_server;  /* Back pointer to owning Server */
@@ -61,6 +61,7 @@ class TcpClientDbManager {
         void StartClientDbManagerThread();
         void StartClientDbManagerThreadInternal();
         void StopClientDbManagerThread();
+        void AbortAllClients();
 
         void EnqueClientProcessingRequest
             (TcpClient *tcp_client, ClientDBRequestOpnCode code);

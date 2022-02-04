@@ -146,3 +146,9 @@ TcpServer::RemoveClientFD(TcpClient *tcp_client) {
 
     this->tcp_client_svc_mgr->RemoveClientFD(tcp_client);
 }
+
+void
+TcpServer::StopListeningAllClients() {
+
+    this->tcp_client_svc_mgr->StopListeningAllClients();
+}

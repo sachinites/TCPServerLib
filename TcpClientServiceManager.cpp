@@ -214,6 +214,11 @@ TcpClientServiceManager::RemoveClientFD(TcpClient *tcp_client) {
     sem_post(&this->sem0_2);
 }
 
+void
+TcpClientServiceManager::StopListeningAllClients() {
+
+
+}
 
 int
 TcpClientServiceManager::GetMaxFd() {

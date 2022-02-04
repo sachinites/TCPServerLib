@@ -167,10 +167,29 @@ TcpClientDbManager::SetClientKAPending(void (*client_ka_pending)(const TcpClient
 }
 
 void
+TcpClientDbManager::AbortAllClients() {
+
+
+}
+
+void
+TcpClientDbManager::PurgeRequestQueue() {
+
+
+}
+
+
+void
 TcpClientDbManager::Stop() {
 
     this->StopClientDbManagerThread();
-    /* Free other Resources */
+    PurgeRequestQueue();
+    AbortAllClients();
+    sem_destroy(&this->wait_for_thread_operation_to_complete);
+    sem_destroy(&this->sem0_1);
+    sem_destroy(&this->sem0_2);
+    pthread_mutex_destroy(&this->request_q_mutex);
+    pthread_cond_destroy(&this->request_q_cv);
 }
 
 void
@@ -178,7 +197,6 @@ TcpClientDbManager::StopClientDbManagerThread() {
 
     pthread_cancel(*this->client_db_mgr_thread);
     pthread_join(*this->client_db_mgr_thread, NULL);
-    /* ToDo : Free up any pending Requests in Request Queue */
     free(this->client_db_mgr_thread);
     this->client_db_mgr_thread = NULL;
 }

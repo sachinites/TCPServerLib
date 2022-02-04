@@ -51,6 +51,7 @@ public:
     /* To Pass the Request to TcpClientServiceMgr, this is Synchronous */
     void AddNewClientFD(TcpClient *tcp_client);
     void RemoveClientFD(TcpClient *tcp_client);
+    void StopListeningAllClients();
 };
 
 
