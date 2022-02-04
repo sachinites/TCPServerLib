@@ -105,6 +105,8 @@ TcpClientServiceManager::StartTcpClientServiceManagerThreadInternal() {
                     if (rcv_bytes == 0) {
                         this->client_disconnected(tcp_client);
                         printf ("Calling CreateDeleteClientRequestSubmission for client %p\n", tcp_client);
+                        /* Remove FD from fd_set otherwise, select will go in infinite loop*/
+                        FD_CLR(tcp_client->comm_fd, &this->backup_fd_set);
                         this->tcp_server->CreateDeleteClientRequestSubmission(tcp_client);
                     }
                     else {
@@ -228,7 +230,7 @@ TcpClientServiceManager::GetMaxFd() {
     for (it = this->tcp_client_db.begin(); it != this->tcp_client_db.end(); ++it) {
 
         tcp_client = *it;
-        if (tcp_client->comm_fd > max_fd ) {
+        if (tcp_client->comm_fd > max_fd_lcl ) {
             max_fd_lcl = tcp_client->comm_fd;
         }
     }

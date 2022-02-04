@@ -3,8 +3,8 @@ CFLAGS=-g
 TARGET:testapp.exe
 LIBS=-lpthread -lrt
 
-testapp.exe:TcpClient.o testapp.o TcpClientDbManager.o TcpClientServiceManager.o TcpNewConnectionAcceptor.o TcpServer.o
-	${CC} ${CFLAGS} TcpClient.o testapp.o TcpClientDbManager.o TcpClientServiceManager.o TcpNewConnectionAcceptor.o TcpServer.o -o testapp.exe ${LIBS}
+testapp.exe:TcpClient.o testapp.o TcpClientDbManager.o TcpClientServiceManager.o TcpNewConnectionAcceptor.o TcpServer.o network_utils.o
+	${CC} ${CFLAGS} TcpClient.o testapp.o TcpClientDbManager.o TcpClientServiceManager.o TcpNewConnectionAcceptor.o TcpServer.o network_utils.o -o testapp.exe ${LIBS}
 
 TcpClient.o:TcpClient.cpp
 	${CC} ${CFLAGS} -c TcpClient.cpp -o TcpClient.o
@@ -23,6 +23,9 @@ TcpNewConnectionAcceptor.o:TcpNewConnectionAcceptor.cpp
 
 TcpServer.o:TcpServer.cpp
 	${CC} ${CFLAGS} -c TcpServer.cpp -o TcpServer.o
+
+network_utils.o:network_utils.cpp
+	${CC} ${CFLAGS} -c network_utils.cpp -o network_utils.o
 
 clean:
 	rm -f *.o
