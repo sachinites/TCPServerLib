@@ -105,8 +105,8 @@ TcpNewConnectionAcceptor::StartTcpNewConnectionAcceptorThreadInternal() {
         tcp_client->comm_fd = comm_socket_fd;
         tcp_client->ip_addr = client_addr.sin_addr.s_addr;
         tcp_client->port_no =  client_addr.sin_port;
-        this->client_connected(tcp_client);
-        this->tcp_server->CreateNewClientRequestSubmission (tcp_client);
+        tcp_client->tcp_server = this->tcp_server;
+        this->tcp_server->ProcessNewClient (tcp_client);
     }
 }
 
@@ -145,13 +145,6 @@ TcpNewConnectionAcceptor::SetAcceptNewConnectionStatus(bool status) {
     pthread_rwlock_wrlock(&this->rwlock);
     this->accept_new_conn = status;
     pthread_rwlock_unlock(&this->rwlock);
-}
-
-void 
-TcpNewConnectionAcceptor::SetClientConnectCbk(
-        void (*client_connected)(const TcpClient *)) {
-
-    this->client_connected = client_connected;
 }
 
 void

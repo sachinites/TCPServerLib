@@ -6,6 +6,7 @@
 #include "TcpClientServiceManager.h"
 #include "bitsop.h"
 #include "network_utils.h"
+#include "TcpClient.h"
 
 TcpServer::TcpServer(std::string ip_addr,  uint16_t port_no, std::string name) {
 
@@ -23,6 +24,7 @@ TcpServer::~TcpServer() {
     assert(!this->tcp_new_conn_acc);
     assert(!this->tcp_client_db_mgr);
     assert(!this->tcp_client_svc_mgr);
+    printf ("TcpServer %s Stopped\n", this->name.c_str());
 }
 
 void
@@ -33,10 +35,10 @@ TcpServer::Start() {
     assert(this->tcp_client_svc_mgr);
 
     this->tcp_new_conn_acc->StartTcpNewConnectionAcceptorThread();
-    this->tcp_client_db_mgr->StartClientDbManagerThread();
     this->tcp_client_svc_mgr->StartTcpClientServiceManagerThread();
 
     SET_BIT(this->state_flags, TCP_SERVER_RUNNING);
+    SetClientCreationMode(true);
     printf ("Tcp Server is Up and Running [%s, %d]\nOk.\n", 
         network_covert_ip_n_to_p(this->ip_addr, 0), this->port_no);
 }
@@ -47,13 +49,17 @@ TcpServer::Stop() {
     this->tcp_new_conn_acc->Stop();
     this->tcp_new_conn_acc = NULL;
 
-    this->tcp_client_db_mgr->Stop();
-    this->tcp_client_db_mgr = NULL;
-
     this->tcp_client_svc_mgr->Stop();
     this->tcp_client_svc_mgr = NULL;
-    UNSET_BIT32(this->state_flags, TCP_SERVER_RUNNING);
 
+    /* Stopping the above two services first ensures that
+        now no thread is alive which could add tcpclient back into
+        DB */
+    this->tcp_client_db_mgr->Purge();
+    delete this->tcp_client_db_mgr;
+    this->tcp_client_db_mgr = NULL;
+
+    UNSET_BIT32(this->state_flags, TCP_SERVER_RUNNING);
     delete this;
 }
 
@@ -99,36 +105,11 @@ TcpServer::SetClientCreationMode(bool status) {
               return;
     }
 
-    this->tcp_client_svc_mgr->SetClientCreationMode(status);
-
-    if (status) {
+     if (status) {
         SET_BIT(this->state_flags, TCP_SERVER_CREATE_MULTI_THREADED_CLIENT);
     }
     else {
         UNSET_BIT32(this->state_flags, TCP_SERVER_CREATE_MULTI_THREADED_CLIENT);
-    }
-}
-
-void
-TcpServer::SetListenAllClientsStatus(bool status) {
-
-    if (status &&
-        !IS_BIT_SET(this->state_flags, TCP_SERVER_NOT_LISTENING_CLIENTS)) {
-        return;
-    }
-
-    if (!status &&
-        IS_BIT_SET(this->state_flags, TCP_SERVER_NOT_LISTENING_CLIENTS)) {
-        return;
-    }
-
-    this->tcp_client_svc_mgr->SetListenAllClientsStatus(status);
-
-    if (status) {
-        UNSET_BIT32(this->state_flags, TCP_SERVER_NOT_LISTENING_CLIENTS);
-    }
-    else {
-        SET_BIT(this->state_flags, TCP_SERVER_NOT_LISTENING_CLIENTS);
     }
 }
 
@@ -141,24 +122,56 @@ TcpServer::SetServerNotifCallbacks(
 
     /* Should be called before invoking Start() on TCP Server */
     assert (this->state_flags == TCP_SERVER_INITIALIZED);
-    this->tcp_new_conn_acc->SetClientConnectCbk(client_connected);
-    this->tcp_client_db_mgr->SetClientKAPending(client_ka_pending);
-    this->tcp_client_svc_mgr->SetClientMsgRecvCbk(client_msg_recvd);
-    this->tcp_client_svc_mgr->SetClientDisconnectCbk(client_disconnected);
+    this->client_connected = client_connected;
+    this->client_ka_pending = client_ka_pending;
+    this->client_msg_recvd = client_msg_recvd;
+    this->client_disconnected = client_disconnected;
 }
 
 void
-TcpServer::CreateNewClientRequestSubmission(TcpClient *tcp_client) {
+TcpServer::CreateMultiThreadedClient(TcpClient *tcp_client) {
 
-    this->tcp_client_db_mgr->EnqueClientProcessingRequest (
-                tcp_client, TCP_DB_MGR_NEW_CLIENT_CREATE);
+    assert(tcp_client->client_thread == NULL);
+    tcp_client->StartThread();
 }
 
 void
-TcpServer::CreateDeleteClientRequestSubmission(TcpClient *tcp_client) {
+TcpServer::ProcessNewClient(TcpClient *tcp_client) {
 
-    this->tcp_client_db_mgr->EnqueClientProcessingRequest(
-            tcp_client, TCP_DB_MGR_DELETE_EXISTING_CLIENT);
+    this->tcp_client_db_mgr->AddClientToDB(tcp_client);
+
+    if (IS_BIT_SET(this->state_flags , TCP_SERVER_CREATE_MULTI_THREADED_CLIENT)) {
+
+        this->CreateMultiThreadedClient(tcp_client);
+    }
+    else {
+
+        this->tcp_client_svc_mgr->ClientFDStartListen(tcp_client);
+    }
+}
+
+void
+TcpServer::ProcessClientDelete(uint32_t ip_addr, uint16_t port_no) {
+
+    TcpClient *tcp_client = 
+        this->tcp_client_db_mgr->RemoveClientFromDB(ip_addr, port_no);
+    
+    if (!tcp_client) {
+        printf ("Error : Such a client dont exist \n");
+        return;
+    }
+
+    if (!tcp_client->client_thread) {
+        this->tcp_client_svc_mgr->ClientFDStopListen(tcp_client);
+    }
+    
+    tcp_client->Abort();
+}
+
+void
+TcpServer::RemoveClientFromDB(TcpClient *tcp_client) {
+
+    this->tcp_client_db_mgr->RemoveClientFromDB(tcp_client);
 }
 
 void
@@ -167,25 +180,36 @@ TcpServer::ClientFDStartListen(TcpClient *tcp_client) {
     this->tcp_client_svc_mgr->ClientFDStartListen(tcp_client);
 }
 
-TcpClient* 
-TcpServer::ClientFDStopListen(uint32_t ip_addr, uint16_t port_no) {
+void
+TcpServer::ProcessClientMigrationToMultiThreaded(uint32_t ip_addr, uint16_t port_no) {
 
-    return this->tcp_client_svc_mgr->ClientFDStopListen(ip_addr, port_no);
+    TcpClient *tcp_client = 
+        this->tcp_client_db_mgr->LookUpClientDB_ThreadSafe(ip_addr, port_no);
+    
+    if (!tcp_client) return;
+
+    if (tcp_client->client_thread) {
+        printf ("Error : Client is already Multi-Threaded\n");
+        return;
+    }
+
+    this->tcp_client_svc_mgr->ClientFDStopListen(tcp_client);
+    this->CreateMultiThreadedClient(tcp_client);
 }
 
 void
-TcpServer::StopListeningAllClients() {
+TcpServer::ProcessClientMigrationToMultiplex(uint32_t ip_addr, uint16_t port_no) {
 
-    this->tcp_client_svc_mgr->StopListeningAllClients();
-}
+    TcpClient *tcp_client = 
+        this->tcp_client_db_mgr->LookUpClientDB_ThreadSafe(ip_addr, port_no);
+    
+    if (!tcp_client) return;
 
-void 
-TcpServer::AbortClient(uint32_t ip_addr, uint16_t port_no) {
-
-    TcpClient *tcp_client = this->tcp_client_svc_mgr->ClientFDStopListen(ip_addr, port_no);
-    if (!tcp_client) {
-        printf ("Error : Client do not exist\n");
+    if (!tcp_client->client_thread) {
+        printf ("Error : Client is already Multiplexed\n");
         return;
     }
-    this->CreateDeleteClientRequestSubmission(tcp_client);
+
+    tcp_client->StopThread();
+    this->tcp_client_svc_mgr->ClientFDStartListen(tcp_client);
 }

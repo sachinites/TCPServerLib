@@ -48,8 +48,6 @@ TcpClientServiceManager::TcpClientServiceManager(TcpServer *tcp_server) {
     sem_init(&this->sem0_1, 0, 0);
     sem_init(&this->sem0_2, 0, 0);
     pthread_rwlock_init(&this->rwlock, NULL);
-    listen_clients = true;
-    create_multi_threaded_client = false;
 }
 
 TcpClientServiceManager::~TcpClientServiceManager() {
@@ -60,9 +58,17 @@ TcpClientServiceManager::~TcpClientServiceManager() {
 }
 
 void 
-TcpClientServiceManager::ClientRemoveFromSvcMgrDb(TcpClient *tcp_client) {
+TcpClientServiceManager::RemoveClientFromDB(TcpClient *tcp_client) {
 
     this->tcp_client_db.remove(tcp_client);
+    tcp_client->Dereference();
+}
+
+void
+TcpClientServiceManager::AddClientToDB(TcpClient *tcp_client){
+
+     this->tcp_client_db.push_back(tcp_client);
+     tcp_client->Reference();
 }
 
 void
@@ -114,15 +120,16 @@ TcpClientServiceManager::StartTcpClientServiceManagerThreadInternal() {
                                                         (struct sockaddr *)&client_addr, &addr_len);
     
                     if (rcv_bytes == 0) {
-                        this->client_disconnected(tcp_client);
+                        this->tcp_server->client_disconnected(tcp_client);
                         /* Remove FD from fd_set otherwise, select will go in infinite loop*/
                         FD_CLR(tcp_client->comm_fd, &this->backup_fd_set);
-                        this->tcp_client_db.remove(tcp_client);
+                        this->RemoveClientFromDB(tcp_client);
                         this->max_fd = this->GetMaxFd();
-                        this->tcp_server->CreateDeleteClientRequestSubmission(tcp_client);
+                        this->tcp_server->RemoveClientFromDB(tcp_client);
+                        tcp_client->Abort();
                     }
                     else {
-                        this->client_msg_recvd(tcp_client, tcp_client->recv_buffer, rcv_bytes);
+                        this->tcp_server->client_msg_recvd(tcp_client, tcp_client->recv_buffer, rcv_bytes);
                     }
                 }
         }
@@ -158,20 +165,6 @@ TcpClientServiceManager::StartTcpClientServiceManagerThread() {
 }
 
 void
-TcpClientServiceManager::SetClientMsgRecvCbk(
-    void (*client_msg_recvd)(const TcpClient *, unsigned char *, uint16_t))
-{
-    this->client_msg_recvd = client_msg_recvd;
-}
-
-void
-TcpClientServiceManager::SetClientDisconnectCbk(
-        void (*client_disconnected)(const TcpClient *)) {
-
-    this->client_disconnected = client_disconnected;
-}
-
-void
 TcpClientServiceManager::SetListenAllClientsStatus(bool status) {
 
     pthread_rwlock_wrlock(&this->rwlock);
@@ -202,13 +195,14 @@ TcpClientServiceManager::ClientFDStartListen(TcpClient *tcp_client) {
     sem_wait(&this->sem0_1);
 
     assert(!this->LookUpClientDB(tcp_client->ip_addr, tcp_client->port_no));
-    this->tcp_client_db.push_back(tcp_client);
+    this->AddClientToDB(tcp_client);
 
     /* Now Update FDs */
     if (this->max_fd < tcp_client->comm_fd) {
         this->max_fd = tcp_client->comm_fd;
     }
 
+    this->tcp_server->client_connected(tcp_client);
     FD_SET(tcp_client->comm_fd, &this->backup_fd_set);
     sem_post(&this->sem0_2);
 }
@@ -230,15 +224,35 @@ TcpClientServiceManager::ClientFDStopListen(uint32_t ip_addr, uint16_t port_no) 
         return NULL;
     }
 
-    this->ClientRemoveFromSvcMgrDb(tcp_client);
+    this->RemoveClientFromDB(tcp_client);
 
     /* Now Update FDs */
     max_fd = GetMaxFd();
 
     FD_CLR(tcp_client->comm_fd, &this->backup_fd_set);
-    this->client_disconnected(tcp_client);
+    this->tcp_server->client_disconnected(tcp_client);
     sem_post(&this->sem0_2);
     return tcp_client;
+}
+
+void
+TcpClientServiceManager::ClientFDStopListen(TcpClient *tcp_client) {
+
+    ForceUnblockSelect();
+
+    sem_wait(&this->sem0_1);
+
+    assert (tcp_client == 
+        this->LookUpClientDB(tcp_client->ip_addr, tcp_client->port_no));
+    
+    this->RemoveClientFromDB(tcp_client);
+
+    /* Now Update FDs */
+    max_fd = GetMaxFd();
+
+    FD_CLR(tcp_client->comm_fd, &this->backup_fd_set);
+    this->tcp_server->client_disconnected(tcp_client);
+    sem_post(&this->sem0_2);
 }
 
 void
@@ -300,10 +314,35 @@ TcpClientServiceManager::ForceUnblockSelect() {
 }
 
 void
+TcpClientServiceManager::Purge() {
+
+    std::list<TcpClient *>::iterator it;
+    TcpClient *tcp_client, *next_tcp_client;
+
+    /* This fn assumes that Svc mgr thread is already cancelled,
+        hence no need to lock anything */
+    assert(this->client_svc_mgr_thread == NULL);
+
+    for (it = this->tcp_client_db.begin(), tcp_client = *it;
+         it != this->tcp_client_db.end();
+         tcp_client = next_tcp_client) {
+
+        next_tcp_client = *(++it);
+
+        this->tcp_client_db.remove(tcp_client);
+        tcp_client->Dereference();
+
+        if (tcp_client->ref_count == 0) {
+            tcp_client->Abort();
+        }
+    }
+}
+
+void
 TcpClientServiceManager::Stop() {
 
     this->StopTcpClientServiceManagerThread();
-    /* Free other Resources */
+    Purge();
 }
 
 void
@@ -313,17 +352,4 @@ TcpClientServiceManager::StopTcpClientServiceManagerThread() {
     pthread_join(*this->client_svc_mgr_thread, NULL);
     free(this->client_svc_mgr_thread);
     this->client_svc_mgr_thread = NULL;
-}
-
-void
-TcpClientServiceManager::TcpClientMigrate(TcpClient *) {
-
-}
-
-void
-TcpClientServiceManager::SetClientCreationMode(bool status) {
-
-    pthread_rwlock_wrlock(&this->rwlock);
-    this->create_multi_threaded_client = status;
-    pthread_rwlock_unlock(&this->rwlock);   
 }

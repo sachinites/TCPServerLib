@@ -1,11 +1,12 @@
 #include <stdio.h>
 #include <unistd.h>
+#include <memory.h>
 #include "TcpServer.h"
 #include "TcpClient.h"
 #include "network_utils.h"
 #include "arpa/inet.h"
 
-TcpClient gtcp_client;
+//TcpClient gtcp_client;
 
 static void
 print_client(const TcpClient *client) {
@@ -24,7 +25,7 @@ void
 client_connect_notif (const TcpClient *tcp_client) {
     printf ("Appln : client connected : ");
     print_client(tcp_client);
-    gtcp_client = *tcp_client;
+    //gtcp_client = *tcp_client;
 }
 
 void
@@ -36,12 +37,25 @@ client_recv_msg(const TcpClient *tcp_client, unsigned char *msg, uint16_t msg_si
 int
 main(int argc, char **argv) {
 
+    //memset(&gtcp_client, 0, sizeof(TcpClient));
+
     //TcpServer *server1 = new TcpServer(0, 40000, "Default");
     TcpServer *server1 = new TcpServer("127.0.0.1", 40000, "Default");
     server1->SetServerNotifCallbacks(
             client_connect_notif, client_disconnect_notif,client_recv_msg, NULL);
 
     server1->Start();
+    sleep(10);
+    server1->Stop();
+    #if 0
+    server1->ProcessClientMigrationToMultiThreaded(gtcp_client.ip_addr, gtcp_client.port_no);
+    sleep(10);
+    server1->ProcessClientMigrationToMultiplex(gtcp_client.ip_addr, gtcp_client.port_no);
+     sleep(10);
+     server1->ProcessClientMigrationToMultiThreaded(gtcp_client.ip_addr, gtcp_client.port_no);
+     sleep(10);
+     server1->Stop();
+     #endif
     pthread_exit(0);
     return 0;
 }

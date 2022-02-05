@@ -11,12 +11,14 @@
 #include "TcpClient.h"
 #include "TcpClientServiceManager.h"
 #include "TcpServer.h"
+#include "network_utils.h"
 
 TcpClient::TcpClient(uint32_t ip_addr, uint16_t port_no) {
 
     this->ip_addr = ip_addr;
     this->port_no = port_no;
     sem_init(&this->wait_for_thread_operation_to_complete, 0, 0);
+    this->ref_count = 0;
 }
 
 TcpClient::TcpClient() {
@@ -24,6 +26,7 @@ TcpClient::TcpClient() {
     this->ip_addr = 0;
     this->port_no = 0;
     sem_init(&this->wait_for_thread_operation_to_complete, 0, 0);
+    this->ref_count = 0;
 }
 TcpClient::TcpClient(TcpClient *tcp_client) {
 
@@ -31,12 +34,16 @@ TcpClient::TcpClient(TcpClient *tcp_client) {
     this->ip_addr = tcp_client->ip_addr;
     this->port_no = tcp_client->port_no;
     sem_init(&this->wait_for_thread_operation_to_complete, 0, 0);
+    this->ref_count = 0;
 }
 
 TcpClient::~TcpClient() {
 
     assert(!this->comm_fd);
     assert(!this->client_thread);
+    assert(!this->ref_count);
+    printf ("Client Deleted : ");
+    this->trace();
 }
 
 void
@@ -45,16 +52,26 @@ TcpClient::Abort() {
     if (this->client_thread) {
         this->StopThread();
     }
-    close(this->comm_fd);
-    this->comm_fd = 0;
+    if (this->comm_fd) {
+        close(this->comm_fd);
+        this->comm_fd = 0;
+    }
     sem_destroy(&this->wait_for_thread_operation_to_complete);
+    this->tcp_server = NULL;
     delete this;
 }
 
-void 
-TcpClient::SetClientSvcMgr(TcpClientServiceManager *svc_mgr) {
+void
+TcpClient::Dereference() {
 
-    this->svc_mgr = svc_mgr;
+    assert(ref_count);
+    ref_count--;
+}
+
+void
+TcpClient::Reference() {
+
+    ref_count++;
 }
 
 void
@@ -65,10 +82,12 @@ TcpClient::ClientThreadFunction() {
 
     socklen_t addr_len = sizeof(client_addr);
 
+    this->tcp_server->client_connected(this);
+
     while (1)
     {
         pthread_testcancel();
-        
+
         rcv_bytes = recvfrom(this->comm_fd,
                              this->recv_buffer,
                              sizeof(this->recv_buffer),
@@ -76,11 +95,16 @@ TcpClient::ClientThreadFunction() {
                              (struct sockaddr *)&client_addr, &addr_len);
 
         if (rcv_bytes == 0) {
-            this->svc_mgr->client_disconnected(this);
-            this->svc_mgr->tcp_server->CreateDeleteClientRequestSubmission(this);
+            this->tcp_server->client_disconnected(this);
+            this->tcp_server->RemoveClientFromDB(this);
+            free(this->client_thread);
+            this->client_thread = NULL;
+            this->Dereference();
+            this->Abort();
+            pthread_exit(0);
         }
         else {
-            this->svc_mgr->client_msg_recvd(this, this->recv_buffer, rcv_bytes);
+            this->tcp_server->client_msg_recvd(this, this->recv_buffer, rcv_bytes);
         }
     }
 }
@@ -93,6 +117,8 @@ client_listening_thread(void *arg) {
     pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
     pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
 
+    /* This TcpClient object is being operated by this thread */
+    tcp_client->Reference();
     sem_post(&tcp_client->wait_for_thread_operation_to_complete);
 
     tcp_client->ClientThreadFunction();
@@ -117,8 +143,18 @@ void
 TcpClient::StopThread() {
 
     assert(this->client_thread);
-    pthread_cancel(*this->client_thread);
-    pthread_join(*this->client_thread, NULL);
+    pthread_cancel(*(this->client_thread));
+    pthread_join(*(this->client_thread), NULL);
     free(this->client_thread);
     this->client_thread = NULL;
+    this->Dereference();
+    this->tcp_server->client_disconnected(this);
+}
+
+void 
+TcpClient::trace() {
+
+    printf ("[%s , %d]\n", 
+        network_covert_ip_n_to_p(htonl(this->ip_addr), 0),
+        htons(this->port_no));
 }
