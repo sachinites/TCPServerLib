@@ -1,13 +1,15 @@
 #include <assert.h>
+#include <arpa/inet.h>
 #include "TcpServer.h"
 #include "TcpNewConnectionAcceptor.h"
 #include "TcpClientDbManager.h"
 #include "TcpClientServiceManager.h"
 #include "bitsop.h"
+#include "network_utils.h"
 
-TcpServer::TcpServer(uint16_t ip_addr,  uint16_t port_no, std::string name) {
+TcpServer::TcpServer(uint32_t ip_addr,  uint16_t port_no, std::string name) {
 
-    this->ip_addr = ip_addr;
+    this->ip_addr = ip_addr ? ip_addr : 0x7f000001 /* 127.0.0.1*/;
     this->port_no = port_no;
     this->name = name;
     this->tcp_new_conn_acc = new TcpNewConnectionAcceptor(this);
@@ -35,7 +37,8 @@ TcpServer::Start() {
     this->tcp_client_svc_mgr->StartTcpClientServiceManagerThread();
 
     SET_BIT(this->state_flags, TCP_SERVER_RUNNING);
-    printf ("Tcp Server is Up and Running\nOk.\n");
+    printf ("Tcp Server is Up and Running [%s, %d]\nOk.\n", 
+        network_covert_ip_n_to_p(this->ip_addr, 0), this->port_no);
 }
 
 void

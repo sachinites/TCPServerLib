@@ -27,13 +27,13 @@ private:
 
 public:
     /* State Variables */
-    uint16_t ip_addr;
+    uint32_t ip_addr;
     uint16_t port_no;
     std::string name;
     uint32_t state_flags;
 
     /* Constructors and Destructors */
-    TcpServer(uint16_t ip_addr, uint16_t port_no, std::string name);
+    TcpServer(uint32_t ip_addr, uint16_t port_no, std::string name);
     ~TcpServer();
     void Start();
     void Stop();

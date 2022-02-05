@@ -42,10 +42,6 @@ main(int argc, char **argv) {
             client_connect_notif, client_disconnect_notif,client_recv_msg, NULL);
 
     server1->Start();
-    sleep(20);
-    server1->AbortClient(gtcp_client.ip_addr, gtcp_client.port_no);
-    sleep(20);
-    server1->AbortClient(gtcp_client.ip_addr, gtcp_client.port_no);
     pthread_exit(0);
     return 0;
 }

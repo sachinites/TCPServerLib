@@ -153,7 +153,7 @@ TcpClientDbManager::StartClientDbManagerThread() {
     pthread_create(this->client_db_mgr_thread, &attr, tcp_client_db_manage, (void *)this);
 
     sem_wait(&this->wait_for_thread_operation_to_complete);
-    printf("TcpClientDbManagerThread Started\n");
+    printf("Service started : TcpClientDbManagerThread\n");
 }
 
 void

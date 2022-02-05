@@ -11,6 +11,7 @@
 #include "TcpClientServiceManager.h"
 #include "TcpServer.h"
 #include "TcpClient.h"
+#include "network_utils.h"
 
 TcpClientServiceManager::TcpClientServiceManager(TcpServer *tcp_server) {
 
@@ -32,7 +33,10 @@ TcpClientServiceManager::TcpClientServiceManager(TcpServer *tcp_server) {
 
     if (bind(this->udp_fd, (struct sockaddr *)&server_addr,
                 sizeof(struct sockaddr)) == -1) {
-        printf("Error : UDP socket bind failed, error = %d\n", errno);
+        printf("Error : UDP socket bind failed [%s(0x%x), %d], error = %d\n", 
+            network_covert_ip_n_to_p(tcp_server->ip_addr, 0),
+            tcp_server->ip_addr,
+            tcp_server->port_no + 1, errno);
         exit(0);
     }
 
@@ -74,7 +78,7 @@ TcpClientServiceManager::StartTcpClientServiceManagerThreadInternal() {
     while(true) {
 
         pthread_testcancel();
-
+        sleep(1);
         memcpy (&this->active_fd_set, &this->backup_fd_set, sizeof(fd_set));
 
         select(this->max_fd + 1 , &this->active_fd_set, NULL, NULL, NULL);
@@ -87,11 +91,13 @@ TcpClientServiceManager::StartTcpClientServiceManagerThreadInternal() {
             continue;
         }
 
-        for (it = this->tcp_client_db.begin(); it != this->tcp_client_db.end(); tcp_client = next_tcp_client){
+        /* Iterate so that we can delete the current element while traversing */
+        for (it = this->tcp_client_db.begin(), tcp_client = *it;
+                it != this->tcp_client_db.end();
+                tcp_client = next_tcp_client){
 
                 next_tcp_client = *(++it);
-                if (!tcp_client) break;
-
+                
                 if (FD_ISSET(tcp_client->comm_fd, &this->active_fd_set)) {
                     
                     rcv_bytes = recvfrom(tcp_client->comm_fd,
@@ -99,12 +105,13 @@ TcpClientServiceManager::StartTcpClientServiceManagerThreadInternal() {
                                                         sizeof(tcp_client->recv_buffer),
                                                         0, 
                                                         (struct sockaddr *)&client_addr, &addr_len);
-
+    
                     if (rcv_bytes == 0) {
                         this->client_disconnected(tcp_client);
                         /* Remove FD from fd_set otherwise, select will go in infinite loop*/
                         FD_CLR(tcp_client->comm_fd, &this->backup_fd_set);
                         this->tcp_client_db.remove(tcp_client);
+                        this->max_fd = this->GetMaxFd();
                         this->tcp_server->CreateDeleteClientRequestSubmission(tcp_client);
                     }
                     else {
@@ -140,7 +147,7 @@ TcpClientServiceManager::StartTcpClientServiceManagerThread() {
                             tcp_client_svc_manager_thread_fn, (void *)this);
 
     sem_wait(&this->wait_for_thread_operation_to_complete);
-    printf("TcpClientServiceManagerThread Started\n");
+    printf("Service started : TcpClientServiceManagerThread\n");
 }
 
 void

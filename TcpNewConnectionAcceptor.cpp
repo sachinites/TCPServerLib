@@ -13,6 +13,7 @@
 #include "TcpNewConnectionAcceptor.h"
 #include "TcpClientDbManager.h"
 #include "TcpClient.h"
+#include "network_utils.h"
 
 TcpNewConnectionAcceptor::TcpNewConnectionAcceptor(TcpServer *TcpServer) {
 
@@ -61,7 +62,10 @@ TcpNewConnectionAcceptor::StartTcpNewConnectionAcceptorThreadInternal() {
 
     if (bind(this->accept_fd, (struct sockaddr *)&server_addr,
                 sizeof(struct sockaddr)) == -1) {
-        printf("Error : Master socket bind failed\n");
+        printf("Error : Acceptor socket bind failed [%s(0x%x), %d], error = %d\n", 
+            network_covert_ip_n_to_p(tcp_server->ip_addr, 0),
+            tcp_server->ip_addr,
+            tcp_server->port_no, errno);
         exit(0);
     }
 
@@ -132,7 +136,7 @@ tcp_listen_for_new_connections(void *arg) {
           exit(0);
       }
       sem_wait (&this->wait_for_thread_operation_to_complete);
-      printf ("TcpNewConnectionAcceptorThread Started\n");
+      printf ("Service started : TcpNewConnectionAcceptorThread\n");
   }
 
 void
