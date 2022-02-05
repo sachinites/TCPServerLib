@@ -47,8 +47,9 @@ TcpClientServiceManager::TcpClientServiceManager(TcpServer *tcp_server) {
     sem_init(&this->wait_for_thread_operation_to_complete, 0 , 0);
     sem_init(&this->sem0_1, 0, 0);
     sem_init(&this->sem0_2, 0, 0);
-    listen_clients = true;
     pthread_rwlock_init(&this->rwlock, NULL);
+    listen_clients = true;
+    create_multi_threaded_client = false;
 }
 
 TcpClientServiceManager::~TcpClientServiceManager() {
@@ -56,6 +57,12 @@ TcpClientServiceManager::~TcpClientServiceManager() {
     assert(this->tcp_client_db.empty());
     assert(!this->udp_fd);
     assert(!this->client_svc_mgr_thread);
+}
+
+void 
+TcpClientServiceManager::ClientRemoveFromSvcMgrDb(TcpClient *tcp_client) {
+
+    this->tcp_client_db.remove(tcp_client);
 }
 
 void
@@ -206,24 +213,6 @@ TcpClientServiceManager::ClientFDStartListen(TcpClient *tcp_client) {
     sem_post(&this->sem0_2);
 }
 
-void
-TcpClientServiceManager::ClientFDStopListen(TcpClient *tcp_client) {
-
-    ForceUnblockSelect();
-
-    sem_wait(&this->sem0_1);
-
-    assert(this->LookUpClientDB(tcp_client->ip_addr, tcp_client->port_no));
-    this->tcp_client_db.remove(tcp_client);
-
-    /* Now Update FDs */
-    max_fd = GetMaxFd();
-
-    FD_CLR(tcp_client->comm_fd, &this->backup_fd_set);
-    this->client_disconnected(tcp_client);
-    sem_post(&this->sem0_2);
-}
-
 /* Overloaded fn */
 TcpClient*
 TcpClientServiceManager::ClientFDStopListen(uint32_t ip_addr, uint16_t port_no) {
@@ -241,7 +230,7 @@ TcpClientServiceManager::ClientFDStopListen(uint32_t ip_addr, uint16_t port_no) 
         return NULL;
     }
 
-    this->tcp_client_db.remove(tcp_client);
+    this->ClientRemoveFromSvcMgrDb(tcp_client);
 
     /* Now Update FDs */
     max_fd = GetMaxFd();
@@ -329,4 +318,12 @@ TcpClientServiceManager::StopTcpClientServiceManagerThread() {
 void
 TcpClientServiceManager::TcpClientMigrate(TcpClient *) {
 
+}
+
+void
+TcpClientServiceManager::SetClientCreationMode(bool status) {
+
+    pthread_rwlock_wrlock(&this->rwlock);
+    this->create_multi_threaded_client = status;
+    pthread_rwlock_unlock(&this->rwlock);   
 }

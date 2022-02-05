@@ -7,9 +7,9 @@
 #include "bitsop.h"
 #include "network_utils.h"
 
-TcpServer::TcpServer(uint32_t ip_addr,  uint16_t port_no, std::string name) {
+TcpServer::TcpServer(std::string ip_addr,  uint16_t port_no, std::string name) {
 
-    this->ip_addr = ip_addr ? ip_addr : 0x7f000001 /* 127.0.0.1*/;
+    this->ip_addr = network_covert_ip_p_to_n(ip_addr.c_str());
     this->port_no = port_no;
     this->name = name;
     this->tcp_new_conn_acc = new TcpNewConnectionAcceptor(this);
@@ -99,7 +99,7 @@ TcpServer::SetClientCreationMode(bool status) {
               return;
     }
 
-    this->tcp_client_db_mgr ->SetClientCreationMode(status);
+    this->tcp_client_svc_mgr->SetClientCreationMode(status);
 
     if (status) {
         SET_BIT(this->state_flags, TCP_SERVER_CREATE_MULTI_THREADED_CLIENT);

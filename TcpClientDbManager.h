@@ -41,9 +41,6 @@ class TcpClientDbManager {
         pthread_mutex_t request_q_mutex;
         pthread_cond_t request_q_cv;
 
-        pthread_rwlock_t rwlock;
-        bool create_multi_threaded_client;
-
         void ProcessRequest(TcpClientDbRequest *);
         void (*client_disconnected)(const TcpClient *);
         void (*client_ka_pending)(const TcpClient *);
@@ -66,7 +63,6 @@ class TcpClientDbManager {
         void StartClientDbManagerThreadInternal();
         void StopClientDbManagerThread();
         void AbortAllClients();
-        void SetClientCreationMode(bool);
 
         void EnqueClientProcessingRequest
             (TcpClient *tcp_client, ClientDBRequestOpnCode code);

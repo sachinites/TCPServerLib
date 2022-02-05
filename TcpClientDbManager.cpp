@@ -10,8 +10,6 @@ TcpClientDbManager::TcpClientDbManager(TcpServer *tcp_server) {
     client_db_mgr_thread = (pthread_t *)calloc(1, sizeof(pthread_t));
     pthread_mutex_init (&this->request_q_mutex, NULL);
     pthread_cond_init(&this->request_q_cv, NULL);
-    pthread_rwlock_init(&this->rwlock, NULL);
-    this->create_multi_threaded_client = false;
 }
 
 TcpClientDbManager::~TcpClientDbManager() {
@@ -181,15 +179,6 @@ TcpClientDbManager::PurgeRequestQueue() {
 }
 
 void
-TcpClientDbManager::SetClientCreationMode(bool status) {
-
-    pthread_rwlock_wrlock(&this->rwlock);
-    this->create_multi_threaded_client = status;
-    pthread_rwlock_unlock(&this->rwlock);   
-}
-
-
-void
 TcpClientDbManager::Stop() {
 
     this->StopClientDbManagerThread();
@@ -200,7 +189,6 @@ TcpClientDbManager::Stop() {
     sem_destroy(&this->sem0_2);
     pthread_mutex_destroy(&this->request_q_mutex);
     pthread_cond_destroy(&this->request_q_cv);
-    pthread_rwlock_destroy(&this->rwlock);
 }
 
 void

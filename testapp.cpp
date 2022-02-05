@@ -36,8 +36,8 @@ client_recv_msg(const TcpClient *tcp_client, unsigned char *msg, uint16_t msg_si
 int
 main(int argc, char **argv) {
 
-    TcpServer *server1 = new TcpServer(0, 40000, "Default");
-    
+    //TcpServer *server1 = new TcpServer(0, 40000, "Default");
+    TcpServer *server1 = new TcpServer("127.0.0.1", 40000, "Default");
     server1->SetServerNotifCallbacks(
             client_connect_notif, client_disconnect_notif,client_recv_msg, NULL);
 

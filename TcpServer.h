@@ -33,7 +33,7 @@ public:
     uint32_t state_flags;
 
     /* Constructors and Destructors */
-    TcpServer(uint32_t ip_addr, uint16_t port_no, std::string name);
+    TcpServer(std::string ip_addr,  uint16_t port_no, std::string name);
     ~TcpServer();
     void Start();
     void Stop();

@@ -21,10 +21,9 @@ class TcpClientServiceManager{
         pthread_t *client_svc_mgr_thread;
         sem_t wait_for_thread_operation_to_complete;
         sem_t sem0_1, sem0_2;
-        void (*client_msg_recvd)(const TcpClient *, unsigned char *, uint16_t);
-        void (*client_disconnected)(const TcpClient *);
         pthread_rwlock_t rwlock;
         bool listen_clients; 
+        bool create_multi_threaded_client;
         void ForceUnblockSelect();
         void TcpClientMigrate(TcpClient *);
     public:
@@ -32,12 +31,17 @@ class TcpClientServiceManager{
         TcpClientServiceManager(TcpServer *);
         ~TcpClientServiceManager();
 
+        /* Used by TcpClient.cpp */
+        void (*client_msg_recvd)(const TcpClient *, unsigned char *, uint16_t);
+        void (*client_disconnected)(const TcpClient *);
+
         void StartTcpClientServiceManagerThread();
         void StartTcpClientServiceManagerThreadInternal();
         void StopTcpClientServiceManagerThread();
         void StopListeningAllClients();
+        void SetClientCreationMode(bool);
         void ClientFDStartListen(TcpClient *);
-        void ClientFDStopListen(TcpClient *);
+        void ClientRemoveFromSvcMgrDb(TcpClient *);
         TcpClient* ClientFDStopListen(uint32_t , uint16_t);
         TcpClient* LookUpClientDB(uint32_t , uint16_t);
         void Stop();
@@ -45,6 +49,7 @@ class TcpClientServiceManager{
                     void (*client_msg_recvd)(const TcpClient *, unsigned char *, uint16_t));
         void SetClientDisconnectCbk(void (*client_disconnected)(const TcpClient *));
         void SetListenAllClientsStatus(bool status);
+
 };
 
 #endif 
