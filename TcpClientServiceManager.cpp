@@ -91,7 +91,7 @@ TcpClientServiceManager::StartTcpClientServiceManagerThreadInternal() {
     while(true) {
 
         pthread_testcancel();
-        sleep(1);
+        
         memcpy (&this->active_fd_set, &this->backup_fd_set, sizeof(fd_set));
 
         select(this->max_fd + 1 , &this->active_fd_set, NULL, NULL, NULL);

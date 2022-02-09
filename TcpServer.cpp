@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <arpa/inet.h>
+#include <stdio.h>
 #include "TcpServer.h"
 #include "TcpNewConnectionAcceptor.h"
 #include "TcpClientDbManager.h"

@@ -28,6 +28,7 @@ TcpClient::TcpClient() {
     sem_init(&this->wait_for_thread_operation_to_complete, 0, 0);
     this->ref_count = 0;
 }
+
 TcpClient::TcpClient(TcpClient *tcp_client) {
 
     this->comm_fd = tcp_client->comm_fd;
@@ -44,6 +45,23 @@ TcpClient::~TcpClient() {
     assert(!this->ref_count);
     printf ("Client Deleted : ");
     this->trace();
+}
+
+int
+TcpClient::SendMsg(char *msg, uint32_t msg_size) const {
+
+    if (this->comm_fd == 0) return -1;
+
+    struct sockaddr_in dest;
+    dest.sin_family = AF_INET;
+    dest.sin_port = htons(this->tcp_server->port_no);
+    dest.sin_addr.s_addr = htonl(this->ip_addr);
+    int rc = sendto(this->comm_fd, msg, msg_size, 0, 
+	     (struct sockaddr *)&dest, sizeof(struct sockaddr));
+    if (rc < 0) {
+        printf ("sendto failed\n");
+    }
+    return rc;
 }
 
 void
