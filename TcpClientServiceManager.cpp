@@ -91,7 +91,7 @@ TcpClientServiceManager::StartTcpClientServiceManagerThreadInternal() {
     while(true) {
 
         pthread_testcancel();
-        sleep(1);
+        
         memcpy (&this->active_fd_set, &this->backup_fd_set, sizeof(fd_set));
 
         select(this->max_fd + 1 , &this->active_fd_set, NULL, NULL, NULL);
@@ -106,32 +106,32 @@ TcpClientServiceManager::StartTcpClientServiceManagerThreadInternal() {
 
         /* Iterate so that we can delete the current element while traversing */
         for (it = this->tcp_client_db.begin(), tcp_client = *it;
-                it != this->tcp_client_db.end();
-                tcp_client = next_tcp_client){
+             it != this->tcp_client_db.end();
+             tcp_client = next_tcp_client){
 
-                next_tcp_client = *(++it);
-                
-                if (FD_ISSET(tcp_client->comm_fd, &this->active_fd_set)) {
-                    
-                    rcv_bytes = recvfrom(tcp_client->comm_fd,
-                                                        tcp_client->recv_buffer,
-                                                        sizeof(tcp_client->recv_buffer),
-                                                        0, 
-                                                        (struct sockaddr *)&client_addr, &addr_len);
-    
-                    if (rcv_bytes == 0) {
-                        this->tcp_server->client_disconnected(tcp_client);
-                        /* Remove FD from fd_set otherwise, select will go in infinite loop*/
-                        FD_CLR(tcp_client->comm_fd, &this->backup_fd_set);
-                        this->RemoveClientFromDB(tcp_client);
-                        this->max_fd = this->GetMaxFd();
-                        this->tcp_server->RemoveClientFromDB(tcp_client);
-                        tcp_client->Abort();
-                    }
-                    else {
-                        this->tcp_server->client_msg_recvd(tcp_client, tcp_client->recv_buffer, rcv_bytes);
-                    }
+            next_tcp_client = *(++it);
+
+            if (FD_ISSET(tcp_client->comm_fd, &this->active_fd_set)) {
+
+                rcv_bytes = recvfrom(tcp_client->comm_fd,
+                        tcp_client->recv_buffer,
+                        sizeof(tcp_client->recv_buffer),
+                        0, 
+                        (struct sockaddr *)&client_addr, &addr_len);
+
+                if (rcv_bytes == 0) {
+                    this->tcp_server->client_disconnected(tcp_client);
+                    /* Remove FD from fd_set otherwise, select will go in infinite loop*/
+                    FD_CLR(tcp_client->comm_fd, &this->backup_fd_set);
+                    this->RemoveClientFromDB(tcp_client);
+                    this->max_fd = this->GetMaxFd();
+                    this->tcp_server->RemoveClientFromDB(tcp_client);
+                    tcp_client->Abort();
                 }
+                else {
+                    this->tcp_server->client_msg_recvd(tcp_client, tcp_client->recv_buffer, rcv_bytes);
+                }
+            }
         }
     } // while ends
 }
@@ -157,7 +157,7 @@ TcpClientServiceManager::StartTcpClientServiceManagerThread() {
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 
-     pthread_create(this->client_svc_mgr_thread, &attr,  
+    pthread_create(this->client_svc_mgr_thread, &attr,  
                             tcp_client_svc_manager_thread_fn, (void *)this);
 
     sem_wait(&this->wait_for_thread_operation_to_complete);
