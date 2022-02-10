@@ -9,7 +9,7 @@
 #include <arpa/inet.h>
 
 #define DEST_PORT            40000
-#define SERVER_IP_ADDRESS   "127.0.0.1"
+#define SERVER_IP_ADDRESS   "10.196.153.163"
 
 #define SRC_PORT	     40001
 #define LOCAL_IP_ADDRESS "127.0.0.1"
@@ -105,7 +105,7 @@ PROMPT_USER:
            sizeof(struct sockaddr));
     
     printf("No of bytes sent = %d\n", sent_recv_bytes);
-   
+  
     /*Step 6 : Client also want to reply from server after sending data*/
     
     /*recvfrom is a blocking system call, meaning the client program will not run past this point

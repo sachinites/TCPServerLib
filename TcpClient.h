@@ -23,10 +23,11 @@ class TcpClient {
         TcpServer *tcp_server;
         sem_t wait_for_thread_operation_to_complete;
         
-        TcpClient(uint32_t ip_addr, uint16_t port_no);
+        TcpClient(uint32_t, uint16_t);
         TcpClient();
         TcpClient (TcpClient *);
         ~TcpClient();
+	int SendMsg(char *, uint32_t) const;
         void StartThread();
         void StopThread();
         void ClientThreadFunction();
