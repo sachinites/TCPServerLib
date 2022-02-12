@@ -22,6 +22,7 @@ class IOVec {
         unsigned char *stream_buffer;
         uint16_t total_size;
         uint16_t cur_pos;
+        uint16_t start_pos;
         bool inline IsFull() {
             return cur_pos == total_size;
         }
@@ -49,7 +50,8 @@ class TcpMsgDemarcar {
         /* To be Implemented by derieved classes */
         virtual bool IsBufferReadyToflush() = 0;
         virtual void NotifyMsgToClient(TcpClient *, unsigned char *, uint16_t ) = 0;
-        
+        virtual void NotifyMsgToClient(TcpClient *tcp_client) = 0;
+
         /* Constructor */
         TcpMsgDemarcar(uint16_t iovec_unit_len);
 

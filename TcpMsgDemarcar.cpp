@@ -50,6 +50,7 @@ TcpMsgDemarcar::CopyData(unsigned char *data, uint16_t data_size) {
             new_iovec->stream_buffer = (unsigned char *)calloc(1, this->iovec_unit_len);
             new_iovec->total_size = this->iovec_unit_len;
             new_iovec->cur_pos = 0;
+            new_iovec->start_pos = 0;
             this->iovec_lst.push_back(new_iovec);
             iovec = new_iovec;
     }
@@ -73,6 +74,7 @@ TcpMsgDemarcar::CopyData(unsigned char *data, uint16_t data_size) {
     new_iovec->stream_buffer = (unsigned char *)calloc(1, this->iovec_unit_len);
     new_iovec->total_size = this->iovec_unit_len;
     new_iovec->cur_pos = 0;
+    new_iovec->start_pos = 0;
     this->iovec_lst.push_back(new_iovec);
     iovec = new_iovec;
 
