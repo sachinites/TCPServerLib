@@ -60,14 +60,17 @@ BCBWrite(ByteCircularBuffer_t *bcb, unsigned char *data, uint16_t data_size) {
 
 uint16_t
 BCBRead(ByteCircularBuffer_t *bcb,
-                 unsigned char* buffer, uint16_t data_size) {
+                 unsigned char* buffer, uint16_t data_size,
+                 bool remove_read_bytes) {
 
     if (bcb->current_size < data_size) return 0;
 
     if (bcb->rear < bcb->front) {
         memcpy(buffer, BCB(bcb, bcb->rear), data_size);
-        bcb->rear += data_size;
-        bcb->current_size -= data_size;
+        if (remove_read_bytes) {
+            bcb->rear += data_size;
+            bcb->current_size -= data_size;
+        }
         return data_size;
     }
 
@@ -75,17 +78,21 @@ BCBRead(ByteCircularBuffer_t *bcb,
 
     if (data_size <= leading_space) {
         memcpy(buffer, BCB(bcb, bcb->rear), data_size);
-        bcb->rear += data_size;
-        if (bcb->rear == bcb->buffer_size) bcb->rear = 0;
-        bcb->current_size -= data_size;
+
+        if (remove_read_bytes) {
+            bcb->rear += data_size;
+            if (bcb->rear == bcb->buffer_size) bcb->rear = 0;
+            bcb->current_size -= data_size;
+        }
         return data_size;
     }
 
     memcpy(buffer, BCB(bcb, bcb->rear), leading_space);
-    bcb->rear = 0;
-    memcpy(buffer, BCB(bcb, bcb->rear), data_size - leading_space);
-    bcb->rear = (data_size - leading_space);
-    bcb->current_size -= data_size;
+    memcpy(buffer, BCB(bcb, 0), data_size - leading_space);
+     if (remove_read_bytes) {
+         bcb->rear = (data_size - leading_space);
+         bcb->current_size -= data_size;
+     }
     return data_size;
 }
 

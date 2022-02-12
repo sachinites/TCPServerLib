@@ -14,12 +14,14 @@
 #define SRC_PORT	     40001
 #define LOCAL_IP_ADDRESS "127.0.0.1"
 
+#pragma pack (push,1)
 typedef struct _test_struct{
 
+    uint16_t msg_size;
     unsigned int a;
     unsigned int b;
 } test_struct_t;
-
+#pragma pack(pop)
 
 typedef struct result_struct_{
 
@@ -90,7 +92,7 @@ PROMPT_USER:
     scanf("%u", &client_data.a);
     printf("Enter b : ?\n");
     scanf("%u", &client_data.b);
-
+    client_data.msg_size = sizeof(client_data);
 	if(client_data.a == 0 && client_data.b == 0) {
 		close(sockfd);
 		exit(0);

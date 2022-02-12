@@ -25,7 +25,10 @@ uint16_t
 BCBWrite(ByteCircularBuffer_t *bcb, unsigned char *data, uint16_t data_size);
 
 uint16_t
-BCBRead(ByteCircularBuffer_t *bcb, unsigned char* buffer, uint16_t data_size);
+BCBRead(ByteCircularBuffer_t *bcb, 
+                 unsigned char* buffer,
+                 uint16_t data_size,
+                 bool remove_read_bytes);
 
 bool
 BCBIsFull(ByteCircularBuffer_t *bcb);

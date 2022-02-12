@@ -6,6 +6,7 @@
 #include "TcpClient.h"
 #include "TcpMsgDemarcar.h"
 #include "TcpMsgFixedSizeDemarcar.h"
+#include "TcpMsgVariableSizeDemarcar.h"
 #include "ByteCircularBuffer.h"
 
 TcpMsgDemarcar::TcpMsgDemarcar(
@@ -75,7 +76,7 @@ TcpMsgDemarcar::ProcessMsg(
          case TCP_DEMARCAR_FIXED_SIZE:
             return new TcpMsgFixedSizeDemarcar(fixed_size);
         case TCP_DEMARCAR_VARIABLE_SIZE:
-            return NULL;
+            return new TcpMsgVariableSizeDemarcar();
         case TCP_DEMARCAR_PATTERN:
             return NULL;
         case TCP_DEMARCAR_NONE:

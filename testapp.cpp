@@ -27,12 +27,14 @@ client_connect_notif (const TcpClient *tcp_client) {
     print_client(tcp_client);
     //gtcp_client = *tcp_client;
 }
-
+#pragma pack (push,1)
 typedef struct _test_struct{
 
+    uint16_t msg_size;
     unsigned int a;
     unsigned int b;
 } test_struct_t;
+#pragma pack(pop)
 
 typedef struct result_struct_{
 
@@ -61,7 +63,7 @@ main(int argc, char **argv) {
     server1->SetServerNotifCallbacks(
             client_connect_notif, client_disconnect_notif,client_recv_msg, NULL);
             
-    server1->SetTcpMsgDemarcar(TCP_DEMARCAR_FIXED_SIZE);
+    server1->SetTcpMsgDemarcar(TCP_DEMARCAR_VARIABLE_SIZE);
 
     server1->Start();
     //sleep(10);
