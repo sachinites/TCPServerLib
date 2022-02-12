@@ -29,7 +29,7 @@ typedef struct result_struct_{
 
 } result_struct_t;
 
-test_struct_t client_data;
+test_struct_t client_data[2];
 result_struct_t result;
 
 void
@@ -88,20 +88,27 @@ setup_tcp_communication(){
 PROMPT_USER:
 
     /*prompt the user to enter data*/
-    printf("Enter a : ?\n");
-    scanf("%u", &client_data.a);
-    printf("Enter b : ?\n");
-    scanf("%u", &client_data.b);
-    client_data.msg_size = sizeof(client_data);
-	if(client_data.a == 0 && client_data.b == 0) {
+    printf("Enter a1 : ?\n");
+    scanf("%u", &client_data[0].a);
+    printf("Enter b1 : ?\n");
+    scanf("%u", &client_data[0].b);
+    client_data[0].msg_size = sizeof(client_data[0]);
+
+    printf("Enter a2 : ?\n");
+    scanf("%u", &client_data[1].a);
+    printf("Enter b2 : ?\n");
+    scanf("%u", &client_data[1].b);
+    client_data[1].msg_size = sizeof(client_data[1]);
+
+	if(client_data[0].a == 0 && client_data[0].b == 0) {
 		close(sockfd);
 		exit(0);
 	}
     
     /*step 5 : send the data to server*/
     sent_recv_bytes = sendto(sockfd, 
-           &client_data,
-           sizeof(test_struct_t), 
+           client_data,
+           sizeof(client_data), 
            0, 
            (struct sockaddr *)&dest, 
            sizeof(struct sockaddr));

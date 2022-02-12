@@ -119,7 +119,7 @@ TcpClient::ClientThreadFunction() {
                              0,
                              (struct sockaddr *)&client_addr, &addr_len);
 
-        if (rcv_bytes == 0) {
+        if (rcv_bytes == 0 || rcv_bytes == 65535 || rcv_bytes < 0) {
             this->tcp_server->client_disconnected(this);
             this->tcp_server->RemoveClientFromDB(this);
             free(this->client_thread);

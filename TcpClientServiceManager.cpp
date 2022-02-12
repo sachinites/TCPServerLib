@@ -119,7 +119,7 @@ TcpClientServiceManager::StartTcpClientServiceManagerThreadInternal() {
                         0, 
                         (struct sockaddr *)&client_addr, &addr_len);
 
-                if (rcv_bytes == 0) {
+                if (rcv_bytes == 0 || rcv_bytes == 65535 || rcv_bytes < 0) {
                     this->tcp_server->client_disconnected(tcp_client);
                     /* Remove FD from fd_set otherwise, select will go in infinite loop*/
                     FD_CLR(tcp_client->comm_fd, &this->backup_fd_set);

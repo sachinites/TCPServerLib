@@ -33,9 +33,9 @@ TcpMsgVariableSizeDemarcar::IsBufferReadyToflush() {
 
     BCBRead(bcb, (unsigned char *)&msg_size, sizeof(uint16_t), false);
 
-    if (msg_size < bcb->current_size) return false;
+    if (msg_size <= bcb->current_size) return true;
     
-    return true;
+    return false;
 }
 
 void
