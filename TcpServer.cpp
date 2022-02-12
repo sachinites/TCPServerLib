@@ -9,6 +9,8 @@
 #include "network_utils.h"
 #include "TcpClient.h"
 
+class TcpMsgDemarcar;
+
 TcpServer::TcpServer(std::string ip_addr,  uint16_t port_no, std::string name) {
 
     this->ip_addr = network_covert_ip_p_to_n(ip_addr.c_str());
@@ -213,4 +215,10 @@ TcpServer::ProcessClientMigrationToMultiplex(uint32_t ip_addr, uint16_t port_no)
 
     tcp_client->StopThread();
     this->tcp_client_svc_mgr->ClientFDStartListen(tcp_client);
+}
+
+void 
+TcpServer::SetTcpMsgDemarcar(TcpMsgDemarcarType msgd_type) {
+
+    this->msgd_type = msgd_type;
 }

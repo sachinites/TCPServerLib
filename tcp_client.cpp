@@ -9,7 +9,7 @@
 #include <arpa/inet.h>
 
 #define DEST_PORT            40000
-#define SERVER_IP_ADDRESS   "10.196.153.163"
+#define SERVER_IP_ADDRESS   "127.0.0.1"
 
 #define SRC_PORT	     40001
 #define LOCAL_IP_ADDRESS "127.0.0.1"

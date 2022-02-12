@@ -8,7 +8,9 @@ OBJS=TcpClient.o \
 			TcpClientServiceManager.o \
 			TcpNewConnectionAcceptor.o \
 			TcpServer.o \
-			network_utils.o
+			network_utils.o	\
+			TcpMsgDemarcar.o \
+			TcpMsgFixedSizeDemarcar.o
 
 testapp.exe:${OBJS}
 	${CC} ${CFLAGS} ${OBJS} -o testapp.exe ${LIBS}
@@ -39,6 +41,12 @@ TcpServer.o:TcpServer.cpp
 
 network_utils.o:network_utils.cpp
 	${CC} ${CFLAGS} -c network_utils.cpp -o network_utils.o
+
+TcpMsgFixedSizeDemarcar.o:TcpMsgFixedSizeDemarcar.cpp
+	${CC} ${CFLAGS} -c TcpMsgFixedSizeDemarcar.cpp -o TcpMsgFixedSizeDemarcar.o
+
+TcpMsgDemarcar.o:TcpMsgDemarcar.cpp
+	${CC} ${CFLAGS} -c TcpMsgDemarcar.cpp -o TcpMsgDemarcar.o
 
 clean:
 	rm -f *.o

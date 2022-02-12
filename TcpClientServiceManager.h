@@ -43,7 +43,6 @@ class TcpClientServiceManager{
         TcpClient* LookUpClientDB(uint32_t , uint16_t);
         void Stop();
         void SetListenAllClientsStatus(bool status);
-
 };
 
 #endif 

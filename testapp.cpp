@@ -57,9 +57,11 @@ main(int argc, char **argv) {
     //memset(&gtcp_client, 0, sizeof(TcpClient));
 
     //TcpServer *server1 = new TcpServer(0, 40000, "Default");
-    TcpServer *server1 = new TcpServer("10.196.153.163", 40000, "Default");
+    TcpServer *server1 = new TcpServer("127.0.0.1", 40000, "Default");
     server1->SetServerNotifCallbacks(
             client_connect_notif, client_disconnect_notif,client_recv_msg, NULL);
+            
+    server1->SetTcpMsgDemarcar(TCP_DEMARCAR_FIXED_SIZE);
 
     server1->Start();
     //sleep(10);

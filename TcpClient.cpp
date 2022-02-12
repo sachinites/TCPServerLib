@@ -43,6 +43,7 @@ TcpClient::~TcpClient() {
     assert(!this->comm_fd);
     assert(!this->client_thread);
     assert(!this->ref_count);
+    assert(!this->msgd);
     printf ("Client Deleted : ");
     this->trace();
 }
@@ -76,6 +77,13 @@ TcpClient::Abort() {
     }
     sem_destroy(&this->wait_for_thread_operation_to_complete);
     this->tcp_server = NULL;
+
+    if (this->msgd) {
+        this->msgd->Destroy();
+        delete this->msgd;
+        this->msgd = NULL;
+    }
+
     delete this;
 }
 
@@ -102,8 +110,7 @@ TcpClient::ClientThreadFunction() {
 
     this->tcp_server->client_connected(this);
 
-    while (1)
-    {
+    while (1) {
         pthread_testcancel();
 
         rcv_bytes = recvfrom(this->comm_fd,
@@ -121,10 +128,13 @@ TcpClient::ClientThreadFunction() {
             this->Abort();
             pthread_exit(0);
         }
-        else {
+        else if (this->msgd) {
+            this->msgd->ProcessMsg(this, this->recv_buffer, rcv_bytes);
+        }
+        else if (this->tcp_server->client_msg_recvd) {
             this->tcp_server->client_msg_recvd(this, this->recv_buffer, rcv_bytes);
         }
-    }
+     }
 }
 
 static void *
@@ -175,4 +185,16 @@ TcpClient::trace() {
     printf ("[%s , %d]\n", 
         network_covert_ip_n_to_p(htonl(this->ip_addr), 0),
         htons(this->port_no));
+}
+
+void 
+TcpClient::Display() {
+
+    trace();
+}
+
+void 
+TcpClient::SetTcpMsgDemarcar(TcpMsgDemarcar  *msgd) {
+    
+    this->msgd = msgd;
 }

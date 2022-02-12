@@ -9,10 +9,12 @@
 
 class TcpClientServiceManager;
 class TcpServer;
+class TcpMsgDemarcar;
+
 class TcpClient {
 
     private:
-
+        pthread_rwlock_t rwlock;
     public :
         uint32_t ip_addr;
         uint16_t port_no;
@@ -22,12 +24,13 @@ class TcpClient {
         pthread_t *client_thread;
         TcpServer *tcp_server;
         sem_t wait_for_thread_operation_to_complete;
+        TcpMsgDemarcar *msgd;
         
         TcpClient(uint32_t, uint16_t);
         TcpClient();
         TcpClient (TcpClient *);
         ~TcpClient();
-	int SendMsg(char *, uint32_t) const;
+	    int SendMsg(char *, uint32_t) const;
         void StartThread();
         void StopThread();
         void ClientThreadFunction();
@@ -35,6 +38,8 @@ class TcpClient {
         void Dereference();
         void Reference();
         void Abort();
+        void Display();
+        void SetTcpMsgDemarcar(TcpMsgDemarcar  *);
 };
 
 #endif

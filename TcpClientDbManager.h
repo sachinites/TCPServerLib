@@ -28,6 +28,7 @@ class TcpClientDbManager {
         void UpdateClient(TcpClient *);
         TcpClient * LookUpClientDB(uint32_t, uint16_t);
         TcpClient *LookUpClientDB_ThreadSafe(uint32_t ip_addr, uint16_t port_no);
+        void DisplayClientDb();
 };
 
 #endif 

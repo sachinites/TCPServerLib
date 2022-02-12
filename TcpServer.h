@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <string>
 #include <pthread.h>
+#include "TcpMsgDemarcar.h"
 
 class TcpNewConnectionAcceptor;
 class TcpClientServiceManager;
@@ -31,6 +32,8 @@ public:
     uint32_t ip_addr;
     uint16_t port_no;
     std::string name;
+    TcpMsgDemarcarType msgd_type;
+
 
     void (*client_connected)(const TcpClient *);
     void (*client_disconnected)(const TcpClient *);
@@ -67,6 +70,8 @@ public:
 
     /* Used my Multiplex service for client migration */
     void CreateMultiThreadedClient(TcpClient *);
+
+    void SetTcpMsgDemarcar(TcpMsgDemarcarType);
 };
 
 
