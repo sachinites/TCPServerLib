@@ -10,12 +10,13 @@ class TcpMsgFixedSizeDemarcar : public TcpMsgDemarcar{
         uint16_t msg_fixed_size;
 
     public:
+        unsigned char *buffer;
         bool IsBufferReadyToflush();
         void NotifyMsgToClient(TcpClient *, unsigned char *, uint16_t );
         void NotifyMsgToClient(TcpClient *);
         
         TcpMsgFixedSizeDemarcar(uint16_t fixed_size);
-
+        void Destroy();
         ~TcpMsgFixedSizeDemarcar();
 };
 

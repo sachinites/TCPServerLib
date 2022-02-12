@@ -10,7 +10,8 @@ OBJS=TcpClient.o \
 			TcpServer.o \
 			network_utils.o	\
 			TcpMsgDemarcar.o \
-			TcpMsgFixedSizeDemarcar.o
+			TcpMsgFixedSizeDemarcar.o \
+			ByteCircularBuffer.o
 
 testapp.exe:${OBJS}
 	${CC} ${CFLAGS} ${OBJS} -o testapp.exe ${LIBS}
@@ -47,6 +48,9 @@ TcpMsgFixedSizeDemarcar.o:TcpMsgFixedSizeDemarcar.cpp
 
 TcpMsgDemarcar.o:TcpMsgDemarcar.cpp
 	${CC} ${CFLAGS} -c TcpMsgDemarcar.cpp -o TcpMsgDemarcar.o
+
+ByteCircularBuffer.o:ByteCircularBuffer.cpp
+	${CC} ${CFLAGS} -c ByteCircularBuffer.cpp -o ByteCircularBuffer.o
 
 clean:
 	rm -f *.o

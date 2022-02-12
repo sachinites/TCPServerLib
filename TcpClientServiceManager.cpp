@@ -129,8 +129,7 @@ TcpClientServiceManager::StartTcpClientServiceManagerThreadInternal() {
                     tcp_client->Abort();
                 }
                 else {
-                    /* If client has a TcpMsgDemarcar, then push the data to Demarcar, else
-                       notify the application straightaway */
+                    /* If client has a TcpMsgDemarcar, then push the data to Demarcar, else notify the application straightaway */
                        if (tcp_client->msgd) {
                            tcp_client->msgd->ProcessMsg(tcp_client, tcp_client->recv_buffer, rcv_bytes);
                        }

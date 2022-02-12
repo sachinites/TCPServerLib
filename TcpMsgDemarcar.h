@@ -4,9 +4,8 @@
 #define __TCP_MSG_DEMARCAR__
 
 #include <stdint.h>
-#include <list>
 
-#define DEFAULT_IOVEC_UNIT_LEN  128
+#define DEFAULT_CBC_SIZE  256
 
 typedef enum {
 
@@ -16,27 +15,15 @@ typedef enum {
         TCP_DEMARCAR_NONE
 } TcpMsgDemarcarType;
 
-class IOVec {
-
-    public:
-        unsigned char *stream_buffer;
-        uint16_t total_size;
-        uint16_t cur_pos;
-        uint16_t start_pos;
-        bool inline IsFull() {
-            return cur_pos == total_size;
-        }
-};
-
 class TcpClient;
+typedef struct ByteCircularBuffer_ ByteCircularBuffer_t;
+
 class TcpMsgDemarcar {
 
     private:
-        std::list<IOVec *> iovec_lst;
-        uint16_t total_iovec_msg_size;
-        uint16_t iovec_unit_len;
 
     public:
+        ByteCircularBuffer_t *bcb;
         static TcpMsgDemarcar *InstantiateTcpMsgDemarcar(
                                                         TcpMsgDemarcarType,
                                                          uint16_t fixed_size,
@@ -49,7 +36,6 @@ class TcpMsgDemarcar {
 
         /* To be Implemented by derieved classes */
         virtual bool IsBufferReadyToflush() = 0;
-        virtual void NotifyMsgToClient(TcpClient *, unsigned char *, uint16_t ) = 0;
         virtual void NotifyMsgToClient(TcpClient *tcp_client) = 0;
 
         /* Constructor */
@@ -60,9 +46,7 @@ class TcpMsgDemarcar {
         /* Destructor */
         ~TcpMsgDemarcar();
 
-        uint16_t GetTotalIovecMsgSize();
-        void FlushIOVec();
-        void AggregateIOVec(unsigned char *unified_buffer, uint16_t ubuff_size);
+        uint16_t GetTotalMsgSize();
         void Destroy();
         void ProcessMsg( TcpClient *, unsigned char *msg_recvd,  uint16_t msg_size);
 };
