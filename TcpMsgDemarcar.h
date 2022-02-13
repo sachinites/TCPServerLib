@@ -24,6 +24,7 @@ class TcpMsgDemarcar {
 
     public:
         ByteCircularBuffer_t *bcb;
+        unsigned char *buffer;
         static TcpMsgDemarcar *InstantiateTcpMsgDemarcar(
                                                         TcpMsgDemarcarType,
                                                          uint16_t fixed_size,

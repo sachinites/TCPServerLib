@@ -8,19 +8,15 @@
 TcpMsgVariableSizeDemarcar::TcpMsgVariableSizeDemarcar () :
 
     TcpMsgDemarcar (DEFAULT_CBC_SIZE) {
-    this->buffer = (unsigned char *)calloc(VARIABLE_SIZE_MAX_BUFFER, sizeof(char));
 }
 
 TcpMsgVariableSizeDemarcar::~TcpMsgVariableSizeDemarcar() {
 
-    assert(!this->buffer);
 }
 
 void
 TcpMsgVariableSizeDemarcar::Destroy() {
 
-    free(this->buffer);
-    this->buffer = NULL;
 }
 
 bool 
@@ -47,8 +43,8 @@ TcpMsgVariableSizeDemarcar::NotifyMsgToClient(TcpClient *tcp_client) {
     while (this->IsBufferReadyToflush()) {
 
         BCBRead(bcb, (unsigned char *)&msg_size, sizeof(uint16_t), false);
-        assert(msg_size == BCBRead(bcb, this->buffer, msg_size, true));
+        assert(msg_size == BCBRead(bcb, this->TcpMsgDemarcar::buffer, msg_size, true));
 
-        tcp_client->tcp_server->client_msg_recvd(tcp_client,  this->buffer, msg_size);
+        tcp_client->tcp_server->client_msg_recvd(tcp_client,  this->TcpMsgDemarcar::buffer, msg_size);
     }
 }

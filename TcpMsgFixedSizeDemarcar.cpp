@@ -10,12 +10,10 @@ TcpMsgFixedSizeDemarcar::TcpMsgFixedSizeDemarcar (
 
     TcpMsgDemarcar (DEFAULT_CBC_SIZE) {
     this->msg_fixed_size = fixed_size;
-    this->buffer = (unsigned char *)calloc(fixed_size, sizeof(char));
 }
 
 TcpMsgFixedSizeDemarcar::~TcpMsgFixedSizeDemarcar() {
 
-    assert(!this->buffer);
 }
 
 bool 
@@ -30,8 +28,6 @@ TcpMsgFixedSizeDemarcar::IsBufferReadyToflush() {
 void
 TcpMsgFixedSizeDemarcar::Destroy() {
 
-    free(this->buffer);
-    this->buffer = NULL;
 }
 
 void
@@ -43,9 +39,9 @@ TcpMsgFixedSizeDemarcar::NotifyMsgToClient(TcpClient *tcp_client) {
 
     while (bytes_read = BCBRead(
                 this->TcpMsgDemarcar::bcb, 
-                this->buffer, 
+                this->TcpMsgDemarcar::buffer, 
                 this->msg_fixed_size, true)) {
 
-        tcp_client->tcp_server->client_msg_recvd(tcp_client, this->buffer, bytes_read);
+        tcp_client->tcp_server->client_msg_recvd(tcp_client, this->TcpMsgDemarcar::buffer, bytes_read);
     }
 }

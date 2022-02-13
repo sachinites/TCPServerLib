@@ -5,7 +5,7 @@
 #include <pthread.h>
 #include <semaphore.h>
 
-#define MAX_CLIENT_BUFFER_SIZE 512
+#define MAX_CLIENT_BUFFER_SIZE 1024
 
 class TcpClientServiceManager;
 class TcpServer;

@@ -13,16 +13,19 @@ TcpMsgDemarcar::TcpMsgDemarcar(
                         uint16_t circular_buffer_size) {
 
     this->bcb = BCBCreateNew(circular_buffer_size);
+    this->buffer = (unsigned char *)calloc (MAX_CLIENT_BUFFER_SIZE, sizeof(unsigned char));
 }
 
 TcpMsgDemarcar::TcpMsgDemarcar() {
 
     this->bcb = BCBCreateNew(DEFAULT_CBC_SIZE);
+    this->buffer = (unsigned char *)calloc (MAX_CLIENT_BUFFER_SIZE, sizeof(unsigned char));
 }
 
 TcpMsgDemarcar::~TcpMsgDemarcar() {
 
     assert(!this->bcb);
+    assert(!this->buffer);
 }
 
 void
@@ -40,6 +43,10 @@ TcpMsgDemarcar::Destroy() {
     if (this->bcb ){
         BCBFree(this->bcb);
         this->bcb = NULL;
+    }
+    if (this->buffer) {
+        free(this->buffer);
+        this->buffer = NULL;
     }
 }
 
