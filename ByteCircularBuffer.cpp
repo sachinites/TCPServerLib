@@ -8,7 +8,7 @@ BCBCreateNew(uint16_t size) {
 
     ByteCircularBuffer_t *bcb = (ByteCircularBuffer_t *)calloc(1, sizeof(ByteCircularBuffer_t));
     bcb->buffer_size = size;
-    bcb->buffer = (unsigned char *)calloc(1, sizeof(unsigned char));
+    bcb->buffer = (unsigned char *)calloc(size, sizeof(unsigned char));
     bcb->current_size = 0;
     bcb->front = 0;
     bcb->rear = 0;
