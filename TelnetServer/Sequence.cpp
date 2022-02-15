@@ -127,6 +127,13 @@ esc_seq_erase_curr_line(int sockfd) {
 }
 
 int
+esc_seq_erase_curr_line_from_cur_end(int sockfd) {
+
+ /* ^[ [ 0 K */
+    return write(sockfd, "\033[0K", 4);
+}
+
+int
 esc_seq_set_cur_at_home(int sockfd) {
 
      return write(sockfd, "\r", 1);

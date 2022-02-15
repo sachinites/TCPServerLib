@@ -45,6 +45,8 @@ esc_seq_clear_screen(int sockfd);
 int
 esc_seq_erase_curr_line(int sockfd);
 int
+esc_seq_erase_curr_line_from_cur_end(int sockfd) ;
+int
 esc_seq_set_cur_at_home(int sockfd);
 
 #endif

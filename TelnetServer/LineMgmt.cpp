@@ -85,6 +85,8 @@ line_add_character(line_t *line, char c){
 
     assert(line->n < MAX_LINE_LENGTH);
    
+   printf ("Adding Char %c at pos %d in line\n", c, line->cpos);
+   
    /* Ist char case */
    if (line_is_empty(line)) {
        assert(line->cpos == 0);
@@ -117,6 +119,8 @@ line_del_charat(line_t *line, uint8_t pos) {
     int i;
    if (line_is_empty(line)) return;
 
+   printf ("Deleting character %c\n", line->lbuf[pos]);
+
     /* Deleting the character from end */
     if (pos == line->lpos) {
         line->lbuf[pos] = '\0';
@@ -128,7 +132,7 @@ line_del_charat(line_t *line, uint8_t pos) {
     /* Deleting the character from middle */
     if (pos >= 0 && pos < line->lpos) {
 
-        for (i = line->cpos + 1; i <= line->lpos; i++) {
+        for (i = pos + 1; i <= line->lpos; i++) {
             line->lbuf[i - 1] = line->lbuf[i];
         }
         line->lpos--;

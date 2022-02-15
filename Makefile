@@ -76,5 +76,5 @@ TelnetServer/LineMgmt.o:TelnetServer/LineMgmt.cpp
 clean:
 	rm -f *.o
 	rm -f *exe
-	rm -f telnetServer/*.o
-	rm -f telnetServer/*.exe
+	rm -f TelnetServer/*.o
+	rm -f TelnetServer/*.exe

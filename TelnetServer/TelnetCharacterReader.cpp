@@ -12,7 +12,7 @@
  */
 
 unsigned char gbuff[32];
-extern line_t line[2];
+extern line_t line[1];
 
 static void
 ReadSingleCharMsg(int sockfd, unsigned char *msg) {
@@ -47,23 +47,26 @@ ReadSingleCharMsg(int sockfd, unsigned char *msg) {
                 return;
             }
             /* In the middle of line */
-            else if (line[0].cpos > 1 && line[0].cpos <= line[0].lpos) {
+            else if (line[0].cpos > 0 && line[0].cpos <= line[0].lpos) {
+                int rem = line[0].lpos - line[0].cpos + 1;
+                print_line(&line[0]);
                 line_del_charat(&line[0], line[0].cpos - 1);
                 print_line(&line[0]);
                 line[0].cpos--;
-                rc = write(sockfd, (const char *)line[0].lbuf + line[0].cpos, line[0].lpos - line[0].cpos);
-                esc_seq_move_cur_to_column(sockfd, line[0].cpos + 1);
+                esc_seq_move_cur_left(sockfd, 1);
+                rc = esc_seq_erase_curr_line_from_cur_end(sockfd);
+                rc = write(sockfd, (const char *)line[0].lbuf + line[0].cpos, rem);
+                esc_seq_move_cur_to_column(sockfd, line[0].cpos +1);
                 return;
             }
-            rc = write(sockfd, (const char *)msg, 1);
             break;
         case TAB_KEY:
             rc = write(sockfd, (const char *)msg, 1);
             break;
-        case 'z':
-            print_line(&line[0]);
-            break;
-        default: ;
+        case 'a' ... 'z':
+        case 'A' ... 'Z':
+        case 48 ... 57:
+        case SPACE_KEY:
             /* Tying on empty line */
             if (line_is_empty(&line[0])) {
                 line_add_character(&line[0], msg[0]);
@@ -78,15 +81,17 @@ ReadSingleCharMsg(int sockfd, unsigned char *msg) {
             }
             /* Tying in the middle of line */
             else {
+                int rem = line[0].lpos - line[0].cpos + 1;
+                print_line(&line[0]);
                 line_add_character(&line[0], msg[0]);
+                print_line(&line[0]);
                 line[0].cpos++;
-                esc_seq_erase_curr_line(sockfd);
-                esc_seq_move_cur_beginning_of_line(sockfd, 0);
-                rc = line_rewrite(sockfd, &line[0]);
-                /* I dont know why I have to Pass here cpos + 1, but it works 
-                this way only*/
-                esc_seq_move_cur_to_column(sockfd, line[0].cpos + 1);
+                 rc = write(sockfd, (const char *)line[0].lbuf + line[0].cpos - 1, rem + 1);
+                printf ("Setting cursor to on charc %c at col %d\n", line->lbuf[line[0].cpos], line[0].cpos + 1);
+                esc_seq_move_cur_to_column(sockfd, line[0].cpos + 1); // column no starts from 1
             }
+            break;
+            case  FORWARD_SLASH_KEY:
             break;
     }
 }
@@ -101,8 +106,8 @@ ReadDoubleCharMsg(int sockfd, unsigned char *msg) {
 
     switch (msg[0]) {
         case ENTER_KEY:
+            line_reinit(&line[0]);
             rc = write(sockfd, "\r\n", 2);
-            //rc = write(sockfd, (const char *)msg, 2); // not working
             break;
         default: ;
     }
@@ -147,6 +152,14 @@ static void
                                 }
                                  //rc = write(sockfd, "\033[D", 3);
                                 break;
+                            case 'H': /* Home Key */
+                                rc = esc_seq_move_cur_beginning_of_line(sockfd, 0);
+                                line[0].cpos = 0;
+                            break;
+                            case 'F': /* END key */
+                                rc = esc_seq_move_cur_to_column(sockfd, line[0].lpos + 2);
+                                line[0].cpos = line[0].lpos + 1;
+                            break;
                         }
                 }
             default:;
@@ -166,21 +179,26 @@ static void
             switch(msg[1]) {
                 case '[':
                     switch(msg[2]){
-                        case '1':
+                        case '3':
                             switch(msg[3]){
                                 case '~':
-                                    /* HOME KEY */
-                                    //rc = write(sockfd, "\033[1~", 4);
-                                    rc = esc_seq_set_cur_at_home(sockfd);
+                                    /* DELETE KEY */
+                                    /* Empty line */
+                                    if (line[0].n == 0) return;
+                                    /* At the end of line */
+                                    else if (line[0].lpos + 1  == line[0].cpos) return;
+                                     /* In the middle of line */
+                                     else if (line[0].cpos >= 0 && line[0].cpos <= line[0].lpos) {
+                                        int rem = line[0].lpos - line[0].cpos + 1;
+                                        line_del_charat(&line[0], line[0].cpos);
+                                        rc = esc_seq_erase_curr_line_from_cur_end(sockfd);
+                                        rc = write(sockfd, (const char *)line[0].lbuf + line[0].cpos, rem -1);
+                                        esc_seq_move_cur_to_column(sockfd, line[0].cpos +1);
+                                     }
+                                    break;
                             }
-                        break;
                         case '4':
-                            switch(msg[3]){
-                                case '~':;
-                                    /* END KEY */
-                                    //rc = write(sockfd, (const char *)msg, 4);
-                                    //rc = write(sockfd, "\033[4~", 4);
-                            }
+                            break;
                     }
             }
     }
