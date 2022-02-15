@@ -9,10 +9,10 @@
 
 typedef enum {
 
+        TCP_DEMARCAR_NONE,
         TCP_DEMARCAR_FIXED_SIZE,
         TCP_DEMARCAR_VARIABLE_SIZE,
-        TCP_DEMARCAR_PATTERN,
-        TCP_DEMARCAR_NONE
+        TCP_DEMARCAR_PATTERN
 } TcpMsgDemarcarType;
 
 class TcpClient;
@@ -40,7 +40,7 @@ class TcpMsgDemarcar {
         virtual void NotifyMsgToClient(TcpClient *tcp_client) = 0;
 
         /* Constructor */
-        TcpMsgDemarcar(uint16_t iovec_unit_len);
+        TcpMsgDemarcar(uint16_t circular_buffer_len);
 
         TcpMsgDemarcar();
 

@@ -15,13 +15,13 @@ print_client(const TcpClient *client) {
                 htons(client->port_no));
 }
 
-void
+static void
 client_disconnect_notif (const TcpClient *tcp_client) {
     printf ("Appln : client disconnected : ");
     print_client(tcp_client);
 }
 
-void
+static void
 client_connect_notif (const TcpClient *tcp_client) {
     printf ("Appln : client connected : ");
     print_client(tcp_client);
@@ -42,7 +42,7 @@ typedef struct result_struct_{
 
 } result_struct_t;
 
-void
+static void
 client_recv_msg(const TcpClient *tcp_client, unsigned char *msg, uint16_t msg_size) {
     printf ("Appln : client msg recvd = %dB : ", msg_size);
     print_client(tcp_client);

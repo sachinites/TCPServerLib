@@ -1,9 +1,8 @@
 CC=g++
 CFLAGS=-g
-TARGET:testapp.exe tcp_client.exe
+TARGET:testapp.exe tcp_client.exe TelnetServer/telnetServer.exe
 LIBS=-lpthread -lrt
 OBJS=TcpClient.o \
-			testapp.o \
 			TcpClientDbManager.o  \
 			TcpClientServiceManager.o \
 			TcpNewConnectionAcceptor.o \
@@ -12,10 +11,13 @@ OBJS=TcpClient.o \
 			TcpMsgDemarcar.o \
 			TcpMsgFixedSizeDemarcar.o \
 			ByteCircularBuffer.o \
-			TcpMsgVariableSizeDemarcar.o
+			TcpMsgVariableSizeDemarcar.o	\
+			TelnetServer/TelnetCharacterReader.o \
+			TelnetServer/Sequence.o \
+			TelnetServer/LineMgmt.o
 
-testapp.exe:${OBJS}
-	${CC} ${CFLAGS} ${OBJS} -o testapp.exe ${LIBS}
+testapp.exe:testapp.o ${OBJS}
+	${CC} ${CFLAGS} ${OBJS} testapp.o -o testapp.exe ${LIBS}
 
 tcp_client.exe:tcp_client.o
 	${CC} ${CFLAGS} tcp_client.o -o tcp_client.exe
@@ -56,6 +58,23 @@ ByteCircularBuffer.o:ByteCircularBuffer.cpp
 TcpMsgVariableSizeDemarcar.o:TcpMsgVariableSizeDemarcar.cpp
 	${CC} ${CFLAGS} -c TcpMsgVariableSizeDemarcar.cpp -o TcpMsgVariableSizeDemarcar.o
 
+TelnetServer/TelnetCharacterReader.o:TelnetServer/TelnetCharacterReader.cpp
+	${CC} ${CFLAGS} -c TelnetServer/TelnetCharacterReader.cpp -o TelnetServer/TelnetCharacterReader.o
+
+TelnetServer/telnetServer.o:TelnetServer/telnetServer.cpp
+	${CC} ${CFLAGS} -c TelnetServer/telnetServer.cpp -o TelnetServer/telnetServer.o
+
+TelnetServer/telnetServer.exe:TelnetServer/telnetServer.o ${OBJS}
+	${CC} ${CFLAGS} ${OBJS} TelnetServer/telnetServer.o -o TelnetServer/telnetServer.exe ${LIBS}
+
+TelnetServer/Sequence.o:TelnetServer/Sequence.cpp
+	${CC} ${CFLAGS} -c TelnetServer/Sequence.cpp -o TelnetServer/Sequence.o
+
+TelnetServer/LineMgmt.o:TelnetServer/LineMgmt.cpp
+	${CC} ${CFLAGS} -c TelnetServer/LineMgmt.cpp -o TelnetServer/LineMgmt.o
+	
 clean:
 	rm -f *.o
 	rm -f *exe
+	rm -f telnetServer/*.o
+	rm -f telnetServer/*.exe

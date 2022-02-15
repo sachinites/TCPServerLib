@@ -101,11 +101,13 @@ TcpNewConnectionAcceptor::StartTcpNewConnectionAcceptorThreadInternal() {
             continue;
         }
 
+        /* Send Welcome msg to client */
         TcpClient *tcp_client = new TcpClient();
         tcp_client->comm_fd = comm_socket_fd;
         tcp_client->ip_addr = client_addr.sin_addr.s_addr;
         tcp_client->port_no = client_addr.sin_port;
         tcp_client->tcp_server = this->tcp_server;
+        tcp_client->SendMsg("Welcome\n", strlen("Welcome\n"));
         tcp_client->SetTcpMsgDemarcar(
             TcpMsgDemarcar::InstantiateTcpMsgDemarcar(
                 this->tcp_server->msgd_type, 8, 0, 0, 0, 0));

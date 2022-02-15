@@ -39,4 +39,7 @@ BCBAvailableSize(ByteCircularBuffer_t *bcb);
 void
 BCBReset(ByteCircularBuffer_t *bcb) ;
 
+void
+BCBPrintSnapshot(ByteCircularBuffer_t *bcb);
+
 #endif
