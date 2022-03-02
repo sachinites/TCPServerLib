@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <pthread.h>
 #include <semaphore.h>
+#include "TcpConn.h"
 
 #define MAX_CLIENT_BUFFER_SIZE 1024
 
@@ -25,6 +26,7 @@ class TcpClient {
         TcpServer *tcp_server;
         sem_t wait_for_thread_operation_to_complete;
         TcpMsgDemarcar *msgd;
+        TcpConn conn;
         
         TcpClient(uint32_t, uint16_t);
         TcpClient();
@@ -40,6 +42,7 @@ class TcpClient {
         void Abort();
         void Display();
         void SetTcpMsgDemarcar(TcpMsgDemarcar  *);
+        void SetConnectionType(tcp_connection_type_t);
 };
 
 #endif

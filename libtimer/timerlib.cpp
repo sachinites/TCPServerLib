@@ -91,7 +91,6 @@ setup_timer(
 	bool exponential_backoff){			/*  Is Timer Exp backoff*/
 
 	Timer_t *timer = (Timer_t *)calloc(1, sizeof(Timer_t));	
-	timer->posix_timer = (timer_t *)calloc(1, sizeof(timer_t));
 
 	timer->user_arg = user_arg;
 	timer->exp_timer = exp_timer;
@@ -113,7 +112,7 @@ setup_timer(
 	evp.sigev_notify_function = timer_callback_wrapper;
 
 	int rc = timer_create (CLOCK_REALTIME,
-							&evp, timer->posix_timer);
+							&evp, &timer->posix_timer);
 
 	assert(rc >= 0);
 
@@ -134,7 +133,7 @@ void
 resurrect_timer(Timer_t *timer){
 
 	int rc;
-	rc = timer_settime(*(timer->posix_timer), 0, &timer->ts, NULL);
+	rc = timer_settime(timer->posix_timer, 0, &timer->ts, NULL);
 	assert(rc >= 0);
 }
 
@@ -149,7 +148,7 @@ void
 delete_timer(Timer_t *timer){
 
 	int rc;
-	rc = timer_delete(*(timer->posix_timer));
+	rc = timer_delete(timer->posix_timer);
 	assert(rc >= 0);
 	timer->user_arg = NULL; /* User arg need to be freed by Appln */
 	timer_set_state(timer, TIMER_DELETED);
@@ -200,11 +199,22 @@ void
 resume_timer(Timer_t *timer){
 
 	assert(timer_get_current_state(timer) == TIMER_PAUSED);
-	
-	timer_fill_itimerspec(&timer->ts.it_value, timer->time_remaining);
-	timer_fill_itimerspec(&timer->ts.it_interval, timer->sec_exp_timer);
-	timer->time_remaining	 = 0;
 
+	if (timer->time_remaining) {	
+		timer_fill_itimerspec(&timer->ts.it_value, timer->time_remaining);
+	}
+	else {
+		timer_fill_itimerspec(&timer->ts.it_value, timer->exp_timer);
+	}
+
+	timer_fill_itimerspec(&timer->ts.it_interval, timer->sec_exp_timer);
+
+	if (timer->ts.it_value.tv_sec == 0 &&
+		timer->ts.it_value.tv_nsec == 0) {
+		assert(0);
+	}
+			
+	timer->time_remaining	 = 0;
 	resurrect_timer(timer);
 	timer_set_state(timer, TIMER_RESUMED);
 }
@@ -231,7 +241,7 @@ timer_get_time_remaining_in_mill_sec(Timer_t *timer){
 
 	memset(&remaining_time, 0, sizeof(struct itimerspec));
 
-	timer_gettime(*timer->posix_timer, &remaining_time);
+	timer_gettime(timer->posix_timer, &remaining_time);
 
 	return timespec_to_millisec(&remaining_time.it_value);
 }

@@ -198,3 +198,9 @@ TcpClient::SetTcpMsgDemarcar(TcpMsgDemarcar  *msgd) {
     
     this->msgd = msgd;
 }
+
+void 
+TcpClient::SetConnectionType(tcp_connection_type_t conn_type) {
+
+    this->conn.conn_type = conn_type;
+}

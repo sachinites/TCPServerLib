@@ -111,6 +111,7 @@ TcpNewConnectionAcceptor::StartTcpNewConnectionAcceptorThreadInternal() {
         tcp_client->SetTcpMsgDemarcar(
             TcpMsgDemarcar::InstantiateTcpMsgDemarcar(
                 this->tcp_server->msgd_type, 8, 0, 0, 0, 0));
+        tcp_client->SetConnectionType(tcp_conn_via_accept);
         this->tcp_server->ProcessNewClient (tcp_client);
     }
 }

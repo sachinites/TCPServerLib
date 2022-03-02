@@ -1,8 +1,9 @@
 CC=g++
 CFLAGS=-g
-TARGET:testapp.exe tcp_client.exe TelnetServer/telnetServer.exe
-LIBS=-lpthread -lrt
+TARGET:testapp.exe tcp_client.exe
+LIBS=-lpthread -lrt -L libtimer -ltimer
 OBJS=TcpClient.o \
+	 TcpConn.o \
 			TcpClientDbManager.o  \
 			TcpClientServiceManager.o \
 			TcpNewConnectionAcceptor.o \
@@ -11,10 +12,8 @@ OBJS=TcpClient.o \
 			TcpMsgDemarcar.o \
 			TcpMsgFixedSizeDemarcar.o \
 			ByteCircularBuffer.o \
-			TcpMsgVariableSizeDemarcar.o	\
-			TelnetServer/TelnetCharacterReader.o \
-			TelnetServer/Sequence.o \
-			TelnetServer/LineMgmt.o
+			TcpMsgVariableSizeDemarcar.o \
+			libtimer/libtimer.a
 
 testapp.exe:testapp.o ${OBJS}
 	${CC} ${CFLAGS} ${OBJS} testapp.o -o testapp.exe ${LIBS}
@@ -24,6 +23,9 @@ tcp_client.exe:tcp_client.o
 	
 TcpClient.o:TcpClient.cpp
 	${CC} ${CFLAGS} -c TcpClient.cpp -o TcpClient.o
+
+TcpConn.o:TcpConn.cpp
+	${CC} ${CFLAGS} -c TcpConn.cpp -o TcpConn.o
 
 tcp_client.o:tcp_client.cpp
 	${CC} ${CFLAGS} -c tcp_client.cpp -o tcp_client.o
@@ -58,23 +60,10 @@ ByteCircularBuffer.o:ByteCircularBuffer.cpp
 TcpMsgVariableSizeDemarcar.o:TcpMsgVariableSizeDemarcar.cpp
 	${CC} ${CFLAGS} -c TcpMsgVariableSizeDemarcar.cpp -o TcpMsgVariableSizeDemarcar.o
 
-TelnetServer/TelnetCharacterReader.o:TelnetServer/TelnetCharacterReader.cpp
-	${CC} ${CFLAGS} -c TelnetServer/TelnetCharacterReader.cpp -o TelnetServer/TelnetCharacterReader.o
+libtimer/libtimer.a:
+	(cd libtimer; make)
 
-TelnetServer/telnetServer.o:TelnetServer/telnetServer.cpp
-	${CC} ${CFLAGS} -c TelnetServer/telnetServer.cpp -o TelnetServer/telnetServer.o
-
-TelnetServer/telnetServer.exe:TelnetServer/telnetServer.o ${OBJS}
-	${CC} ${CFLAGS} ${OBJS} TelnetServer/telnetServer.o -o TelnetServer/telnetServer.exe ${LIBS}
-
-TelnetServer/Sequence.o:TelnetServer/Sequence.cpp
-	${CC} ${CFLAGS} -c TelnetServer/Sequence.cpp -o TelnetServer/Sequence.o
-
-TelnetServer/LineMgmt.o:TelnetServer/LineMgmt.cpp
-	${CC} ${CFLAGS} -c TelnetServer/LineMgmt.cpp -o TelnetServer/LineMgmt.o
-	
 clean:
 	rm -f *.o
 	rm -f *exe
-	rm -f TelnetServer/*.o
-	rm -f TelnetServer/*.exe
+	(cd libtimer; make clean)

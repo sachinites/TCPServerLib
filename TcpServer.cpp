@@ -46,8 +46,6 @@ TcpServer::Start() {
 
     printf ("Tcp Server is Up and Running [%s, %d]\nOk.\n", 
         network_covert_ip_n_to_p(this->ip_addr, 0), this->port_no);
-
-    lines_init ();
 }
 
 void

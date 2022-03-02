@@ -39,7 +39,7 @@ typedef enum{
 typedef struct Timer_{
 
 	/* Timer config */
-    timer_t *posix_timer;
+    timer_t posix_timer;
     void *user_arg;
 	unsigned long exp_timer;		/* in milli-sec */
 	unsigned long sec_exp_timer;	/* in milli-sec */
