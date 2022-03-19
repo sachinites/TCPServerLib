@@ -28,7 +28,7 @@ TcpNewConnectionAcceptor::TcpNewConnectionAcceptor(TcpServerController *TcpServe
     sem_init(&this->wait_for_thread_operation_to_complete, 0, 0);
     pthread_rwlock_init(&this->rwlock, NULL);
     this->accept_new_conn = true;
-    this->tcp_server = TcpServerController;
+    this->tcp_ctrlr = TcpServerController;
 }
 
  TcpNewConnectionAcceptor::~TcpNewConnectionAcceptor() {
@@ -45,8 +45,8 @@ TcpNewConnectionAcceptor::StartTcpNewConnectionAcceptorThreadInternal() {
     bool create_multi_threaded_client;
     struct sockaddr_in server_addr;
     server_addr.sin_family      = AF_INET;
-    server_addr.sin_port        = htons(this->tcp_server->port_no);
-    server_addr.sin_addr.s_addr = htonl(this->tcp_server->ip_addr);
+    server_addr.sin_port        = htons(this->tcp_ctrlr->port_no);
+    server_addr.sin_addr.s_addr = htonl(this->tcp_ctrlr->ip_addr);
 
     if (setsockopt(this->accept_fd, SOL_SOCKET,
                    SO_REUSEADDR, (char *)&opt, sizeof(opt))<0) {
@@ -63,9 +63,9 @@ TcpNewConnectionAcceptor::StartTcpNewConnectionAcceptorThreadInternal() {
     if (bind(this->accept_fd, (struct sockaddr *)&server_addr,
                 sizeof(struct sockaddr)) == -1) {
         printf("Error : Acceptor socket bind failed [%s(0x%x), %d], error = %d\n", 
-            network_covert_ip_n_to_p(tcp_server->ip_addr, 0),
-            tcp_server->ip_addr,
-            tcp_server->port_no, errno);
+            network_covert_ip_n_to_p(tcp_ctrlr->ip_addr, 0),
+            tcp_ctrlr->ip_addr,
+            tcp_ctrlr->port_no, errno);
         exit(0);
     }
 
@@ -106,13 +106,13 @@ TcpNewConnectionAcceptor::StartTcpNewConnectionAcceptorThreadInternal() {
         tcp_client->comm_fd = comm_socket_fd;
         tcp_client->ip_addr = client_addr.sin_addr.s_addr;
         tcp_client->port_no = client_addr.sin_port;
-        tcp_client->tcp_server = this->tcp_server;
+        tcp_client->tcp_ctrlr = this->tcp_ctrlr;
         tcp_client->SendMsg("Welcome\n", strlen("Welcome\n"));
         tcp_client->SetTcpMsgDemarcar(
             TcpMsgDemarcar::InstantiateTcpMsgDemarcar(
-                this->tcp_server->msgd_type, 8, 0, 0, 0, 0));
+                this->tcp_ctrlr->msgd_type, 8, 0, 0, 0, 0));
         tcp_client->SetConnectionType(tcp_conn_via_accept);
-        this->tcp_server->ProcessNewClient (tcp_client);
+        this->tcp_ctrlr->ProcessNewClient (tcp_client);
     }
 }
 

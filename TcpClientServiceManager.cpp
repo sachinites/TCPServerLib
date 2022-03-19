@@ -13,9 +13,9 @@
 #include "TcpClient.h"
 #include "network_utils.h"
 
-TcpClientServiceManager::TcpClientServiceManager(TcpServerController *tcp_server) {
+TcpClientServiceManager::TcpClientServiceManager(TcpServerController *tcp_ctrlr) {
 
-    this->tcp_server = tcp_server;
+    this->tcp_ctrlr = tcp_ctrlr;
 
     this->udp_fd = socket (AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     
@@ -28,15 +28,15 @@ TcpClientServiceManager::TcpClientServiceManager(TcpServerController *tcp_server
 
     struct sockaddr_in server_addr;
     server_addr.sin_family      = AF_INET;
-    server_addr.sin_port          = htons(tcp_server->port_no + 1);
-    server_addr.sin_addr.s_addr = htonl(this->tcp_server->ip_addr);
+    server_addr.sin_port          = htons(tcp_ctrlr->port_no + 1);
+    server_addr.sin_addr.s_addr = htonl(this->tcp_ctrlr->ip_addr);
 
     if (bind(this->udp_fd, (struct sockaddr *)&server_addr,
                 sizeof(struct sockaddr)) == -1) {
         printf("Error : UDP socket bind failed [%s(0x%x), %d], error = %d\n", 
-            network_covert_ip_n_to_p(tcp_server->ip_addr, 0),
-            tcp_server->ip_addr,
-            tcp_server->port_no + 1, errno);
+            network_covert_ip_n_to_p(tcp_ctrlr->ip_addr, 0),
+            tcp_ctrlr->ip_addr,
+            tcp_ctrlr->port_no + 1, errno);
         exit(0);
     }
 
@@ -120,12 +120,12 @@ TcpClientServiceManager::StartTcpClientServiceManagerThreadInternal() {
                         (struct sockaddr *)&client_addr, &addr_len);
 
                 if (rcv_bytes == 0 || rcv_bytes == 65535 || rcv_bytes < 0) {
-                    this->tcp_server->client_disconnected(tcp_client);
+                    this->tcp_ctrlr->client_disconnected(tcp_client);
                     /* Remove FD from fd_set otherwise, select will go in infinite loop*/
                     FD_CLR(tcp_client->comm_fd, &this->backup_fd_set);
                     this->RemoveClientFromDB(tcp_client);
                     this->max_fd = this->GetMaxFd();
-                    this->tcp_server->RemoveClientFromDB(tcp_client);
+                    this->tcp_ctrlr->RemoveClientFromDB(tcp_client);
                     tcp_client->Abort();
                 }
                 else {
@@ -134,8 +134,8 @@ TcpClientServiceManager::StartTcpClientServiceManagerThreadInternal() {
                        if (tcp_client->msgd) {
                            tcp_client->msgd->ProcessMsg(tcp_client, tcp_client->recv_buffer, rcv_bytes);
                        }
-                       else if (this->tcp_server->client_msg_recvd){
-                            this->tcp_server->client_msg_recvd(tcp_client, tcp_client->recv_buffer, rcv_bytes);
+                       else if (this->tcp_ctrlr->client_msg_recvd){
+                            this->tcp_ctrlr->client_msg_recvd(tcp_client, tcp_client->recv_buffer, rcv_bytes);
                        }
                 }
             }
@@ -209,7 +209,7 @@ TcpClientServiceManager::ClientFDStartListen(TcpClient *tcp_client) {
         this->max_fd = tcp_client->comm_fd;
     }
 
-    this->tcp_server->client_connected(tcp_client);
+    this->tcp_ctrlr->client_connected(tcp_client);
     FD_SET(tcp_client->comm_fd, &this->backup_fd_set);
     sem_post(&this->sem0_2);
 }
@@ -237,7 +237,7 @@ TcpClientServiceManager::ClientFDStopListen(uint32_t ip_addr, uint16_t port_no) 
     max_fd = GetMaxFd();
 
     FD_CLR(tcp_client->comm_fd, &this->backup_fd_set);
-    this->tcp_server->client_disconnected(tcp_client);
+    this->tcp_ctrlr->client_disconnected(tcp_client);
     sem_post(&this->sem0_2);
     return tcp_client;
 }
@@ -258,7 +258,7 @@ TcpClientServiceManager::ClientFDStopListen(TcpClient *tcp_client) {
     max_fd = GetMaxFd();
 
     FD_CLR(tcp_client->comm_fd, &this->backup_fd_set);
-    this->tcp_server->client_disconnected(tcp_client);
+    this->tcp_ctrlr->client_disconnected(tcp_client);
     sem_post(&this->sem0_2);
 }
 
@@ -306,8 +306,8 @@ TcpClientServiceManager::ForceUnblockSelect() {
     struct sockaddr_in server_addr;
 
     server_addr.sin_family      = AF_INET;
-    server_addr.sin_port          = htons(tcp_server->port_no + 1);
-    server_addr.sin_addr.s_addr = htonl(this->tcp_server->ip_addr);
+    server_addr.sin_port          = htons(tcp_ctrlr->port_no + 1);
+    server_addr.sin_addr.s_addr = htonl(this->tcp_ctrlr->ip_addr);
     
     int rc = sendto(fd, (unsigned char *)&dummy_data, 1,
                 0, (const struct sockaddr *) &server_addr, 

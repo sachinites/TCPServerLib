@@ -15,7 +15,7 @@ class TcpConnectorMgr {
         list<TcpClient *> pendingClient;
         list<TcpClient *> connectedClient;
         wheel_timer_t *connector_timer;
-        TcpServerController *tcp_server;
+        TcpServerController *tcp_ctrlr;
         bool TryClientConnect(TcpClient *);
         void MoveClientFromPendingListtoConnectList(TcpClient *);
         void MoveClientFromConnectListtoPendingList(TcpClient *);

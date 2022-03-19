@@ -45,6 +45,6 @@ TcpMsgVariableSizeDemarcar::NotifyMsgToClient(TcpClient *tcp_client) {
         BCBRead(bcb, (unsigned char *)&msg_size, sizeof(uint16_t), false);
         assert(msg_size == BCBRead(bcb, this->TcpMsgDemarcar::buffer, msg_size, true));
 
-        tcp_client->tcp_server->client_msg_recvd(tcp_client,  this->TcpMsgDemarcar::buffer, msg_size);
+        tcp_client->tcp_ctrlr->client_msg_recvd(tcp_client,  this->TcpMsgDemarcar::buffer, msg_size);
     }
 }

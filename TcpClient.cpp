@@ -55,7 +55,7 @@ TcpClient::SendMsg(char *msg, uint32_t msg_size) {
 
     struct sockaddr_in dest;
     dest.sin_family = AF_INET;
-    dest.sin_port = htons(this->tcp_server->port_no);
+    dest.sin_port = htons(this->tcp_ctrlr->port_no);
     dest.sin_addr.s_addr = htonl(this->ip_addr);
     int rc = sendto(this->comm_fd, msg, msg_size, 0, 
 	     (struct sockaddr *)&dest, sizeof(struct sockaddr));
@@ -78,7 +78,7 @@ TcpClient::Abort() {
         this->comm_fd = 0;
     }
     sem_destroy(&this->wait_for_thread_operation_to_complete);
-    this->tcp_server = NULL;
+    this->tcp_ctrlr = NULL;
 
     if (this->msgd) {
         this->msgd->Destroy();
@@ -110,7 +110,7 @@ TcpClient::ClientThreadFunction() {
 
     socklen_t addr_len = sizeof(client_addr);
 
-    this->tcp_server->client_connected(this);
+    this->tcp_ctrlr->client_connected(this);
 
     while (1) {
         pthread_testcancel();
@@ -122,8 +122,8 @@ TcpClient::ClientThreadFunction() {
                              (struct sockaddr *)&client_addr, &addr_len);
 
         if (rcv_bytes == 0 || rcv_bytes == 65535 || rcv_bytes < 0) {
-            this->tcp_server->client_disconnected(this);
-            this->tcp_server->RemoveClientFromDB(this);
+            this->tcp_ctrlr->client_disconnected(this);
+            this->tcp_ctrlr->RemoveClientFromDB(this);
             free(this->client_thread);
             this->client_thread = NULL;
             this->Dereference();
@@ -134,9 +134,9 @@ TcpClient::ClientThreadFunction() {
             this->conn.bytes_recvd += rcv_bytes;
             this->msgd->ProcessMsg(this, this->recv_buffer, rcv_bytes);
         }
-        else if (this->tcp_server->client_msg_recvd) {
+        else if (this->tcp_ctrlr->client_msg_recvd) {
             this->conn.bytes_recvd += rcv_bytes;
-            this->tcp_server->client_msg_recvd(this, this->recv_buffer, rcv_bytes);
+            this->tcp_ctrlr->client_msg_recvd(this, this->recv_buffer, rcv_bytes);
         }
      }
 }
@@ -180,7 +180,7 @@ TcpClient::StopThread() {
     free(this->client_thread);
     this->client_thread = NULL;
     this->Dereference();
-    this->tcp_server->client_disconnected(this);
+    this->tcp_ctrlr->client_disconnected(this);
 }
 
 void 

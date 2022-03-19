@@ -15,7 +15,7 @@ class TcpNewConnectionAcceptor {
         bool accept_new_conn;
 
     public:
-        TcpServerController *tcp_server;  /* Back pointer to owning Server */
+        TcpServerController *tcp_ctrlr;  /* Back pointer to owning Server */
 
         TcpNewConnectionAcceptor(TcpServerController *);
         ~TcpNewConnectionAcceptor();

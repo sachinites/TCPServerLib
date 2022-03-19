@@ -23,7 +23,7 @@ class TcpClient {
         int ref_count;
         unsigned char recv_buffer[MAX_CLIENT_BUFFER_SIZE];
         pthread_t *client_thread;
-        TcpServerController *tcp_server;
+        TcpServerController *tcp_ctrlr;
         sem_t wait_for_thread_operation_to_complete;
         TcpMsgDemarcar *msgd;
         TcpConn conn;

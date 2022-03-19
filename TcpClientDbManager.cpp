@@ -3,9 +3,9 @@
 #include "TcpServerController.h"
 #include "TcpClient.h"
 
-TcpClientDbManager::TcpClientDbManager(TcpServerController *tcp_server) {
+TcpClientDbManager::TcpClientDbManager(TcpServerController *tcp_ctrlr) {
 
-    this->tcp_server = tcp_server;
+    this->tcp_ctrlr = tcp_ctrlr;
     pthread_rwlock_init(&this->rwlock, NULL);
 }
 

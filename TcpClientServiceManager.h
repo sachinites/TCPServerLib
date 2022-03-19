@@ -27,7 +27,7 @@ class TcpClientServiceManager{
         void TcpClientMigrate(TcpClient *);
         void Purge();
     public:
-        TcpServerController *tcp_server;
+        TcpServerController *tcp_ctrlr;
         TcpClientServiceManager(TcpServerController *);
         ~TcpClientServiceManager();
 

@@ -16,7 +16,7 @@ class TcpClientDbManager {
         std::list<TcpClient *> tcp_client_db;
 
     public:
-        TcpServerController *tcp_server;  /* Back pointer to owning Server */
+        TcpServerController *tcp_ctrlr;  /* Back pointer to owning Server */
         TcpClientDbManager(TcpServerController *);
         ~TcpClientDbManager();
         
