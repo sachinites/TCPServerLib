@@ -49,7 +49,7 @@ TcpClient::~TcpClient() {
 }
 
 int
-TcpClient::SendMsg(char *msg, uint32_t msg_size) const {
+TcpClient::SendMsg(char *msg, uint32_t msg_size) {
 
     if (this->comm_fd == 0) return -1;
 
@@ -61,7 +61,9 @@ TcpClient::SendMsg(char *msg, uint32_t msg_size) const {
 	     (struct sockaddr *)&dest, sizeof(struct sockaddr));
     if (rc < 0) {
         printf ("sendto failed\n");
+        return rc;
     }
+    this->conn.bytes_sent += (uint32_t )rc;
     return rc;
 }
 
@@ -129,9 +131,11 @@ TcpClient::ClientThreadFunction() {
             pthread_exit(0);
         }
         else if (this->msgd) {
+            this->conn.bytes_recvd += rcv_bytes;
             this->msgd->ProcessMsg(this, this->recv_buffer, rcv_bytes);
         }
         else if (this->tcp_server->client_msg_recvd) {
+            this->conn.bytes_recvd += rcv_bytes;
             this->tcp_server->client_msg_recvd(this, this->recv_buffer, rcv_bytes);
         }
      }

@@ -44,13 +44,14 @@ typedef struct result_struct_{
 
 static void
 client_recv_msg(const TcpClient *tcp_client, unsigned char *msg, uint16_t msg_size) {
+
     printf ("Appln : client msg recvd = %dB : ", msg_size);
     print_client(tcp_client);
 	
     test_struct_t *data = (test_struct_t *)msg;
     result_struct_t res;
     res.c = data->a + data->b;
-    tcp_client->SendMsg((char *)&res, sizeof(res));
+    //tcp_client->SendMsg((char *)&res, sizeof(res));
 }
 
 int

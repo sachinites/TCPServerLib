@@ -32,7 +32,7 @@ class TcpClient {
         TcpClient();
         TcpClient (TcpClient *);
         ~TcpClient();
-	    int SendMsg(char *, uint32_t) const;
+	    int SendMsg(char *, uint32_t);
         void StartThread();
         void StopThread();
         void ClientThreadFunction();

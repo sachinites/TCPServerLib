@@ -15,11 +15,19 @@ TcpConnectorMgr::~TcpConnectorMgr() {
     assert(!this->connector_timer);
 }
 
+void
 TcpConnectorMgr::StopConnectorMgrService() {
 
     this->tcp_server = NULL;
-    
-    WheelTimerStop(this->connector_timer);
-    WheelTimerDestroy(this->connector_timer);
-    this->connector_timer = NULL;
+    if (this->connector_timer) {
+        cancel_wheel_timer(this->connector_timer);
+        free(this->connector_timer);
+        this->connector_timer = NULL;
+    }
+}
+
+void
+TcpConnectorMgr::StartConnectorMgrService() {
+
+   start_wheel_timer(this->connector_timer);
 }
