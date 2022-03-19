@@ -1,9 +1,9 @@
 #include <assert.h>
-#include "TcpServer.h"
+#include "TcpServerController.h"
 #include "TcpClient.h"
 #include "TcpConnectorService.h"
 
-TcpConnectorMgr::TcpConnectorMgr(TcpServer *tcp_server) {
+TcpConnectorMgr::TcpConnectorMgr(TcpServerController *tcp_server) {
 
     this->tcp_server = tcp_server;
     this->connector_timer = init_wheel_timer(60, 1, TIMER_SECONDS);

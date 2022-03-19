@@ -1,7 +1,7 @@
 #include <assert.h>
 #include <arpa/inet.h>
 #include <stdio.h>
-#include "TcpServer.h"
+#include "TcpServerController.h"
 #include "TcpNewConnectionAcceptor.h"
 #include "TcpClientDbManager.h"
 #include "TcpClientServiceManager.h"
@@ -11,7 +11,7 @@
 
 class TcpMsgDemarcar;
 
-TcpServer::TcpServer(std::string ip_addr,  uint16_t port_no, std::string name) {
+TcpServerController::TcpServerController(std::string ip_addr,  uint16_t port_no, std::string name) {
 
     this->ip_addr = network_covert_ip_p_to_n(ip_addr.c_str());
     this->port_no = port_no;
@@ -22,18 +22,18 @@ TcpServer::TcpServer(std::string ip_addr,  uint16_t port_no, std::string name) {
     SET_BIT(this->state_flags, TCP_SERVER_INITIALIZED);
 }
 
-TcpServer::~TcpServer() {
+TcpServerController::~TcpServerController() {
     
     assert(!this->tcp_new_conn_acc);
     assert(!this->tcp_client_db_mgr);
     assert(!this->tcp_client_svc_mgr);
-    printf ("TcpServer %s Stopped\n", this->name.c_str());
+    printf ("TcpServerController %s Stopped\n", this->name.c_str());
 }
 
 extern void lines_init () ;
 
 void
-TcpServer::Start() {
+TcpServerController::Start() {
 
     assert(this->tcp_new_conn_acc);
     assert(this->tcp_client_db_mgr);
@@ -49,7 +49,7 @@ TcpServer::Start() {
 }
 
 void
-TcpServer::Stop() {
+TcpServerController::Stop() {
 
     this->tcp_new_conn_acc->Stop();
     this->tcp_new_conn_acc = NULL;
@@ -69,13 +69,13 @@ TcpServer::Stop() {
 }
 
 uint32_t
-TcpServer::GetStateFlags() {
+TcpServerController::GetStateFlags() {
 
     return this->state_flags;
 }
 
 void
-TcpServer::SetAcceptNewConnectionStatus(bool status) {
+TcpServerController::SetAcceptNewConnectionStatus(bool status) {
 
     if (status &&
         !IS_BIT_SET(this->state_flags, TCP_SERVER_NOT_ACCEPTING_NEW_CONNECTIONS)) {
@@ -98,7 +98,7 @@ TcpServer::SetAcceptNewConnectionStatus(bool status) {
 }
 
 void
-TcpServer::SetClientCreationMode(bool status) {
+TcpServerController::SetClientCreationMode(bool status) {
 
     if (status &&
         IS_BIT_SET(this->state_flags, TCP_SERVER_CREATE_MULTI_THREADED_CLIENT)) {
@@ -119,7 +119,7 @@ TcpServer::SetClientCreationMode(bool status) {
 }
 
 void
-TcpServer::SetServerNotifCallbacks(
+TcpServerController::SetServerNotifCallbacks(
                 void (*client_connected)(const TcpClient *), 
                 void (*client_disconnected)(const TcpClient *),
                 void (*client_msg_recvd)(const TcpClient *, unsigned char *, uint16_t),
@@ -134,14 +134,14 @@ TcpServer::SetServerNotifCallbacks(
 }
 
 void
-TcpServer::CreateMultiThreadedClient(TcpClient *tcp_client) {
+TcpServerController::CreateMultiThreadedClient(TcpClient *tcp_client) {
 
     assert(tcp_client->client_thread == NULL);
     tcp_client->StartThread();
 }
 
 void
-TcpServer::ProcessNewClient(TcpClient *tcp_client) {
+TcpServerController::ProcessNewClient(TcpClient *tcp_client) {
 
     this->tcp_client_db_mgr->AddClientToDB(tcp_client);
 
@@ -156,7 +156,7 @@ TcpServer::ProcessNewClient(TcpClient *tcp_client) {
 }
 
 void
-TcpServer::ProcessClientDelete(uint32_t ip_addr, uint16_t port_no) {
+TcpServerController::ProcessClientDelete(uint32_t ip_addr, uint16_t port_no) {
 
     TcpClient *tcp_client = 
         this->tcp_client_db_mgr->RemoveClientFromDB(ip_addr, port_no);
@@ -174,19 +174,19 @@ TcpServer::ProcessClientDelete(uint32_t ip_addr, uint16_t port_no) {
 }
 
 void
-TcpServer::RemoveClientFromDB(TcpClient *tcp_client) {
+TcpServerController::RemoveClientFromDB(TcpClient *tcp_client) {
 
     this->tcp_client_db_mgr->RemoveClientFromDB(tcp_client);
 }
 
 void
-TcpServer::ClientFDStartListen(TcpClient *tcp_client) {
+TcpServerController::ClientFDStartListen(TcpClient *tcp_client) {
 
     this->tcp_client_svc_mgr->ClientFDStartListen(tcp_client);
 }
 
 void
-TcpServer::ProcessClientMigrationToMultiThreaded(uint32_t ip_addr, uint16_t port_no) {
+TcpServerController::ProcessClientMigrationToMultiThreaded(uint32_t ip_addr, uint16_t port_no) {
 
     TcpClient *tcp_client = 
         this->tcp_client_db_mgr->LookUpClientDB_ThreadSafe(ip_addr, port_no);
@@ -203,7 +203,7 @@ TcpServer::ProcessClientMigrationToMultiThreaded(uint32_t ip_addr, uint16_t port
 }
 
 void
-TcpServer::ProcessClientMigrationToMultiplex(uint32_t ip_addr, uint16_t port_no) {
+TcpServerController::ProcessClientMigrationToMultiplex(uint32_t ip_addr, uint16_t port_no) {
 
     TcpClient *tcp_client = 
         this->tcp_client_db_mgr->LookUpClientDB_ThreadSafe(ip_addr, port_no);
@@ -220,7 +220,7 @@ TcpServer::ProcessClientMigrationToMultiplex(uint32_t ip_addr, uint16_t port_no)
 }
 
 void 
-TcpServer::SetTcpMsgDemarcar(TcpMsgDemarcarType msgd_type) {
+TcpServerController::SetTcpMsgDemarcar(TcpMsgDemarcarType msgd_type) {
 
     this->msgd_type = msgd_type;
 }

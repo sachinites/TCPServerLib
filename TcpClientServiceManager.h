@@ -7,7 +7,7 @@
 
 #define MAX_CLIENT_SUPPORTED 127
 
-class TcpServer;
+class TcpServerController;
 class TcpClient;
 class TcpClientServiceManager{
 
@@ -27,8 +27,8 @@ class TcpClientServiceManager{
         void TcpClientMigrate(TcpClient *);
         void Purge();
     public:
-        TcpServer *tcp_server;
-        TcpClientServiceManager(TcpServer *);
+        TcpServerController *tcp_server;
+        TcpClientServiceManager(TcpServerController *);
         ~TcpClientServiceManager();
 
         void StartTcpClientServiceManagerThread();

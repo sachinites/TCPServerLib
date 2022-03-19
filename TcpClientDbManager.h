@@ -8,7 +8,7 @@
 #include <vector>
 
 class TcpClient;
-class TcpServer;
+class TcpServerController;
 class TcpClientDbManager {
 
     private:
@@ -16,8 +16,8 @@ class TcpClientDbManager {
         std::list<TcpClient *> tcp_client_db;
 
     public:
-        TcpServer *tcp_server;  /* Back pointer to owning Server */
-        TcpClientDbManager(TcpServer *);
+        TcpServerController *tcp_server;  /* Back pointer to owning Server */
+        TcpClientDbManager(TcpServerController *);
         ~TcpClientDbManager();
         
         /* Client DB mgmt functions */

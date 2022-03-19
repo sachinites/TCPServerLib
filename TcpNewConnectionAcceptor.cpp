@@ -9,13 +9,13 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 
-#include "TcpServer.h"
+#include "TcpServerController.h"
 #include "TcpNewConnectionAcceptor.h"
 #include "TcpClientDbManager.h"
 #include "TcpClient.h"
 #include "network_utils.h"
 
-TcpNewConnectionAcceptor::TcpNewConnectionAcceptor(TcpServer *TcpServer) {
+TcpNewConnectionAcceptor::TcpNewConnectionAcceptor(TcpServerController *TcpServerController) {
 
     this->accept_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
@@ -28,7 +28,7 @@ TcpNewConnectionAcceptor::TcpNewConnectionAcceptor(TcpServer *TcpServer) {
     sem_init(&this->wait_for_thread_operation_to_complete, 0, 0);
     pthread_rwlock_init(&this->rwlock, NULL);
     this->accept_new_conn = true;
-    this->tcp_server = TcpServer;
+    this->tcp_server = TcpServerController;
 }
 
  TcpNewConnectionAcceptor::~TcpNewConnectionAcceptor() {

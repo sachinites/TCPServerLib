@@ -4,7 +4,7 @@
 #include <pthread.h>
 #include <semaphore.h>
 
-class TcpServer;
+class TcpServerController;
 class TcpNewConnectionAcceptor {
 
     private:
@@ -15,9 +15,9 @@ class TcpNewConnectionAcceptor {
         bool accept_new_conn;
 
     public:
-        TcpServer *tcp_server;  /* Back pointer to owning Server */
+        TcpServerController *tcp_server;  /* Back pointer to owning Server */
 
-        TcpNewConnectionAcceptor(TcpServer *);
+        TcpNewConnectionAcceptor(TcpServerController *);
         ~TcpNewConnectionAcceptor();
 
         void StartTcpNewConnectionAcceptorThread();

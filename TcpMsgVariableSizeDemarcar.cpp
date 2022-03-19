@@ -1,7 +1,7 @@
 #include <assert.h>
 #include "TcpMsgDemarcar.h"
 #include "TcpClient.h"
-#include "TcpServer.h"
+#include "TcpServerController.h"
 #include "ByteCircularBuffer.h"
 #include "TcpMsgVariableSizeDemarcar.h"
 

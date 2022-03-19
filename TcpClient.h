@@ -9,7 +9,7 @@
 #define MAX_CLIENT_BUFFER_SIZE 1024
 
 class TcpClientServiceManager;
-class TcpServer;
+class TcpServerController;
 class TcpMsgDemarcar;
 
 class TcpClient {
@@ -23,7 +23,7 @@ class TcpClient {
         int ref_count;
         unsigned char recv_buffer[MAX_CLIENT_BUFFER_SIZE];
         pthread_t *client_thread;
-        TcpServer *tcp_server;
+        TcpServerController *tcp_server;
         sem_t wait_for_thread_operation_to_complete;
         TcpMsgDemarcar *msgd;
         TcpConn conn;

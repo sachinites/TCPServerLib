@@ -7,7 +7,7 @@ OBJS=TcpClient.o \
 			TcpClientDbManager.o  \
 			TcpClientServiceManager.o \
 			TcpNewConnectionAcceptor.o \
-			TcpServer.o \
+			TcpServerController.o \
 			network_utils.o	\
 			TcpMsgDemarcar.o \
 			TcpMsgFixedSizeDemarcar.o \
@@ -42,8 +42,8 @@ TcpClientServiceManager.o:TcpClientServiceManager.cpp
 TcpNewConnectionAcceptor.o:TcpNewConnectionAcceptor.cpp
 	${CC} ${CFLAGS} -c TcpNewConnectionAcceptor.cpp -o TcpNewConnectionAcceptor.o
 
-TcpServer.o:TcpServer.cpp
-	${CC} ${CFLAGS} -c TcpServer.cpp -o TcpServer.o
+TcpServerController.o:TcpServerController.cpp
+	${CC} ${CFLAGS} -c TcpServerController.cpp -o TcpServerController.o
 
 network_utils.o:network_utils.cpp
 	${CC} ${CFLAGS} -c network_utils.cpp -o network_utils.o

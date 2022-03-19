@@ -2,7 +2,7 @@
 #include "TcpMsgDemarcar.h"
 #include "TcpMsgFixedSizeDemarcar.h"
 #include "TcpClient.h"
-#include "TcpServer.h"
+#include "TcpServerController.h"
 #include "ByteCircularBuffer.h"
 
 TcpMsgFixedSizeDemarcar::TcpMsgFixedSizeDemarcar (

@@ -1,9 +1,9 @@
 #include <assert.h>
 #include "TcpClientDbManager.h"
-#include "TcpServer.h"
+#include "TcpServerController.h"
 #include "TcpClient.h"
 
-TcpClientDbManager::TcpClientDbManager(TcpServer *tcp_server) {
+TcpClientDbManager::TcpClientDbManager(TcpServerController *tcp_server) {
 
     this->tcp_server = tcp_server;
     pthread_rwlock_init(&this->rwlock, NULL);

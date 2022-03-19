@@ -7,7 +7,7 @@
 #include "libtimer/WheelTimer.h"
 
 class TcpClient;
-class TcpServer;
+class TcpServerController;
 
 class TcpConnectorMgr {
 
@@ -15,14 +15,14 @@ class TcpConnectorMgr {
         list<TcpClient *> pendingClient;
         list<TcpClient *> connectedClient;
         wheel_timer_t *connector_timer;
-        TcpServer *tcp_server;
+        TcpServerController *tcp_server;
         bool TryClientConnect(TcpClient *);
         void MoveClientFromPendingListtoConnectList(TcpClient *);
         void MoveClientFromConnectListtoPendingList(TcpClient *);
         void ClientProcessDisconnect(TcpClient *);
         void ClientProcessConnect(TcpClient *);
     public:
-        TcpConnectorMgr(TcpServer *);
+        TcpConnectorMgr(TcpServerController *);
         ~TcpConnectorMgr();
         void StartConnectorMgrService();
         void StopConnectorMgrService();

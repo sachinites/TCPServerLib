@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <memory.h>
-#include "TcpServer.h"
+#include "TcpServerController.h"
 #include "TcpClient.h"
 #include "network_utils.h"
 #include "arpa/inet.h"
@@ -59,8 +59,8 @@ main(int argc, char **argv) {
 
     //memset(&gtcp_client, 0, sizeof(TcpClient));
 
-    //TcpServer *server1 = new TcpServer(0, 40000, "Default");
-    TcpServer *server1 = new TcpServer("127.0.0.1", 40000, "Default");
+    //TcpServerController *server1 = new TcpServerController(0, 40000, "Default");
+    TcpServerController *server1 = new TcpServerController("127.0.0.1", 40000, "Default");
     server1->SetServerNotifCallbacks(
             client_connect_notif, client_disconnect_notif,client_recv_msg, NULL);
             

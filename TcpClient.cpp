@@ -10,7 +10,7 @@
 #include <arpa/inet.h>
 #include "TcpClient.h"
 #include "TcpClientServiceManager.h"
-#include "TcpServer.h"
+#include "TcpServerController.h"
 #include "network_utils.h"
 
 TcpClient::TcpClient(uint32_t ip_addr, uint16_t port_no) {

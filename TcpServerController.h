@@ -19,7 +19,7 @@ class TcpClient;
 #define TCP_SERVER_CREATE_MULTI_THREADED_CLIENT (4)
 #define TCP_SERVER_STATE_MAX (5)
 
-class TcpServer {
+class TcpServerController {
 
 private:
     TcpNewConnectionAcceptor *tcp_new_conn_acc;
@@ -41,8 +41,8 @@ public:
     void (*client_ka_pending)(const TcpClient *);
 
     /* Constructors and Destructors */
-    TcpServer(std::string ip_addr,  uint16_t port_no, std::string name);
-    ~TcpServer();
+    TcpServerController(std::string ip_addr,  uint16_t port_no, std::string name);
+    ~TcpServerController();
     void Start();
     void Stop();
     uint32_t GetStateFlags();

@@ -9,11 +9,11 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 #include "TcpClientServiceManager.h"
-#include "TcpServer.h"
+#include "TcpServerController.h"
 #include "TcpClient.h"
 #include "network_utils.h"
 
-TcpClientServiceManager::TcpClientServiceManager(TcpServer *tcp_server) {
+TcpClientServiceManager::TcpClientServiceManager(TcpServerController *tcp_server) {
 
     this->tcp_server = tcp_server;
 
