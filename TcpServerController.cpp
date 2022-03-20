@@ -30,8 +30,6 @@ TcpServerController::~TcpServerController() {
     printf ("TcpServerController %s Stopped\n", this->name.c_str());
 }
 
-extern void lines_init () ;
-
 void
 TcpServerController::Start() {
 
