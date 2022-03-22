@@ -187,7 +187,7 @@ void
 TcpClient::trace() {
 
     printf ("[%s , %d]\n", 
-        network_covert_ip_n_to_p(htonl(this->ip_addr), 0),
+        network_convert_ip_n_to_p(htonl(this->ip_addr), 0),
         htons(this->port_no));
 }
 

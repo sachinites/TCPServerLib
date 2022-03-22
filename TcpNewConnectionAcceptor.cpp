@@ -63,7 +63,7 @@ TcpNewConnectionAcceptor::StartTcpNewConnectionAcceptorThreadInternal() {
     if (bind(this->accept_fd, (struct sockaddr *)&server_addr,
                 sizeof(struct sockaddr)) == -1) {
         printf("Error : Acceptor socket bind failed [%s(0x%x), %d], error = %d\n", 
-            network_covert_ip_n_to_p(tcp_ctrlr->ip_addr, 0),
+            network_convert_ip_n_to_p(tcp_ctrlr->ip_addr, 0),
             tcp_ctrlr->ip_addr,
             tcp_ctrlr->port_no, errno);
         exit(0);

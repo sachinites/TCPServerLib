@@ -11,7 +11,7 @@
 static void
 print_client(const TcpClient *client) {
 
-    printf ("[%s , %d]\n", network_covert_ip_n_to_p(htonl(client->ip_addr), 0),
+    printf ("[%s , %d]\n", network_convert_ip_n_to_p(htonl(client->ip_addr), 0),
                 htons(client->port_no));
 }
 
