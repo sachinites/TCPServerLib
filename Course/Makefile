@@ -6,7 +6,7 @@ OBJS=TcpClientDBManager.o 		 		\
 			TcpClientServiceManager.o 		 \
 			TcpNewConnectionAcceptor.o 	 \
 			TcpServerController.o 				  \
-			network_utils.o
+			network_utils.o					
 
 testapp.exe:testapp.o ${OBJS}
 	${CC} ${CFLAGS} ${OBJS} testapp.o -o testapp.exe ${LIBS}

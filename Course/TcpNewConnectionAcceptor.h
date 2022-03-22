@@ -12,6 +12,8 @@ class TcpNewConnectionAcceptor {
 
         TcpNewConnectionAcceptor(TcpServerController *);
         ~TcpNewConnectionAcceptor();
+
+        void StartTcpNewConnectionAcceptorThread();
 };
 
 
