@@ -27,7 +27,7 @@ class TcpClient {
         sem_t wait_for_thread_operation_to_complete;
         TcpMsgDemarcar *msgd;
         TcpConn conn;
-        
+
         TcpClient(uint32_t, uint16_t);
         TcpClient();
         TcpClient (TcpClient *);

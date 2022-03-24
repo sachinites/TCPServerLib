@@ -32,3 +32,10 @@ TcpServerController::Start() {
     printf ("Tcp Server is Up and Running [%s, %d]\nOk.\n",
         network_convert_ip_n_to_p(this->ip_addr, 0), this->port_no);
 }
+
+void
+TcpServerController::ProcessNewClient(TcpClient *tcp_client) {
+
+    this->tcp_client_db_mgr->AddClientToDB(tcp_client);
+    this->tcp_client_svc_mgr->ClientFDStartListen(tcp_client);
+}

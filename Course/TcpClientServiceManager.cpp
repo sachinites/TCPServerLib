@@ -14,3 +14,7 @@ void
 TcpClientServiceManager::StartTcpClientServiceManagerThread() {
 
 }
+
+void TcpClientServiceManager::ClientFDStartListen(TcpClient *tcp_client) {
+
+}

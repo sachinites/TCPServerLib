@@ -14,6 +14,7 @@ class TcpClientServiceManager{
         ~TcpClientServiceManager();
 
         void StartTcpClientServiceManagerThread();
+        void ClientFDStartListen(TcpClient *);
 };
 
 #endif
