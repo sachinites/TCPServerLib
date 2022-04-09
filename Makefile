@@ -1,7 +1,7 @@
 CC=g++
 CFLAGS=-g
 TARGET:testapp.exe tcp_client.exe
-LIBS=-lpthread -lrt -L libtimer -ltimer
+LIBS=-lpthread -lrt -L libtimer -ltimer -L CommandParser -lcli
 OBJS=TcpClient.o \
 	 TcpConn.o \
 			TcpClientDbManager.o  \
@@ -13,7 +13,9 @@ OBJS=TcpClient.o \
 			TcpMsgFixedSizeDemarcar.o \
 			ByteCircularBuffer.o \
 			TcpMsgVariableSizeDemarcar.o \
-			libtimer/libtimer.a
+			TcpServerCli.o \
+			libtimer/libtimer.a	\
+			CommandParser/libcli.a \
 
 testapp.exe:testapp.o ${OBJS}
 	${CC} ${CFLAGS} ${OBJS} testapp.o -o testapp.exe ${LIBS}
@@ -60,10 +62,16 @@ ByteCircularBuffer.o:ByteCircularBuffer.cpp
 TcpMsgVariableSizeDemarcar.o:TcpMsgVariableSizeDemarcar.cpp
 	${CC} ${CFLAGS} -c TcpMsgVariableSizeDemarcar.cpp -o TcpMsgVariableSizeDemarcar.o
 
+TcpServerCli.o:TcpServerCli.cpp
+	${CC} ${CFLAGS} -c TcpServerCli.cpp -o TcpServerCli.o
+
 libtimer/libtimer.a:
 	(cd libtimer; make)
 
+CommandParser/libcli.a:
+	(cd CommandParser; make)
 clean:
 	rm -f *.o
 	rm -f *exe
 	(cd libtimer; make clean)
+	(cd CommandParser; make clean)
