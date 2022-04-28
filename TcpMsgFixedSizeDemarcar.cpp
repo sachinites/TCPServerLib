@@ -42,6 +42,7 @@ TcpMsgFixedSizeDemarcar::NotifyMsgToClient(TcpClient *tcp_client) {
                 this->TcpMsgDemarcar::buffer, 
                 this->msg_fixed_size, true)) {
 
-        tcp_client->tcp_ctrlr->client_msg_recvd(tcp_client, this->TcpMsgDemarcar::buffer, bytes_read);
+        tcp_client->tcp_ctrlr->client_msg_recvd(tcp_client->tcp_ctrlr, 
+                tcp_client, this->TcpMsgDemarcar::buffer, bytes_read);
     }
 }

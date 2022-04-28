@@ -120,7 +120,7 @@ TcpClientServiceManager::StartTcpClientServiceManagerThreadInternal() {
                         (struct sockaddr *)&client_addr, &addr_len);
 
                 if (rcv_bytes == 0 || rcv_bytes == 65535 || rcv_bytes < 0) {
-                    this->tcp_ctrlr->client_disconnected(tcp_client);
+                    this->tcp_ctrlr->client_disconnected(this->tcp_ctrlr, tcp_client);
                     /* Remove FD from fd_set otherwise, select will go in infinite loop*/
                     FD_CLR(tcp_client->comm_fd, &this->backup_fd_set);
                     this->RemoveClientFromDB(tcp_client);
@@ -135,7 +135,7 @@ TcpClientServiceManager::StartTcpClientServiceManagerThreadInternal() {
                            tcp_client->msgd->ProcessMsg(tcp_client, tcp_client->recv_buffer, rcv_bytes);
                        }
                        else if (this->tcp_ctrlr->client_msg_recvd){
-                            this->tcp_ctrlr->client_msg_recvd(tcp_client, tcp_client->recv_buffer, rcv_bytes);
+                            this->tcp_ctrlr->client_msg_recvd(this->tcp_ctrlr, tcp_client, tcp_client->recv_buffer, rcv_bytes);
                        }
                 }
             }
@@ -209,7 +209,7 @@ TcpClientServiceManager::ClientFDStartListen(TcpClient *tcp_client) {
         this->max_fd = tcp_client->comm_fd;
     }
 
-    this->tcp_ctrlr->client_connected(tcp_client);
+    this->tcp_ctrlr->client_connected(this->tcp_ctrlr, tcp_client);
     FD_SET(tcp_client->comm_fd, &this->backup_fd_set);
     sem_post(&this->sem0_2);
 }
@@ -237,7 +237,7 @@ TcpClientServiceManager::ClientFDStopListen(uint32_t ip_addr, uint16_t port_no) 
     max_fd = GetMaxFd();
 
     FD_CLR(tcp_client->comm_fd, &this->backup_fd_set);
-    this->tcp_ctrlr->client_disconnected(tcp_client);
+    this->tcp_ctrlr->client_disconnected(this->tcp_ctrlr, tcp_client);
     sem_post(&this->sem0_2);
     return tcp_client;
 }
@@ -258,7 +258,7 @@ TcpClientServiceManager::ClientFDStopListen(TcpClient *tcp_client) {
     max_fd = GetMaxFd();
 
     FD_CLR(tcp_client->comm_fd, &this->backup_fd_set);
-    this->tcp_ctrlr->client_disconnected(tcp_client);
+    this->tcp_ctrlr->client_disconnected(this->tcp_ctrlr, tcp_client);
     sem_post(&this->sem0_2);
 }
 

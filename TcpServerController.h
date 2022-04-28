@@ -35,10 +35,10 @@ public:
     TcpMsgDemarcarType msgd_type;
 
 
-    void (*client_connected)(const TcpClient *);
-    void (*client_disconnected)(const TcpClient *);
-    void (*client_msg_recvd)(const TcpClient *, unsigned char *, uint16_t);
-    void (*client_ka_pending)(const TcpClient *);
+    void (*client_connected)(const TcpServerController *, const TcpClient *);
+    void (*client_disconnected)(const TcpServerController *, const TcpClient *);
+    void (*client_msg_recvd)(const TcpServerController *, const TcpClient *, unsigned char *, uint16_t);
+    void (*client_ka_pending)(const TcpServerController *, const TcpClient *);
 
     /* Constructors and Destructors */
     TcpServerController(std::string ip_addr,  uint16_t port_no, std::string name);
@@ -48,10 +48,10 @@ public:
     uint32_t GetStateFlags();
     void SetAcceptNewConnectionStatus(bool);
     void SetClientCreationMode(bool);
-    void SetServerNotifCallbacks(void (*client_connected)(const TcpClient *), 
-                                                    void (*client_disconnected)(const TcpClient *),
-                                                    void (*client_msg_recvd)(const TcpClient *, unsigned char *, uint16_t),
-                                                    void (*client_ka_pending)(const TcpClient *) );
+    void SetServerNotifCallbacks(void (*client_connected)(const TcpServerController *, const TcpClient *), 
+                                                    void (*client_disconnected)(const TcpServerController *, const TcpClient *),
+                                                    void (*client_msg_recvd)(const TcpServerController *, const TcpClient *, unsigned char *, uint16_t),
+                                                    void (*client_ka_pending)(const TcpServerController *, const TcpClient *) );
     
     /* Process Client Migration, used by Application */
     void ProcessClientMigrationToMultiThreaded(uint32_t ip_addr, uint16_t port_no);

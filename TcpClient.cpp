@@ -110,7 +110,7 @@ TcpClient::ClientThreadFunction() {
 
     socklen_t addr_len = sizeof(client_addr);
 
-    this->tcp_ctrlr->client_connected(this);
+    this->tcp_ctrlr->client_connected(this->tcp_ctrlr, this);
 
     while (1) {
         pthread_testcancel();
@@ -122,7 +122,7 @@ TcpClient::ClientThreadFunction() {
                              (struct sockaddr *)&client_addr, &addr_len);
 
         if (rcv_bytes == 0 || rcv_bytes == 65535 || rcv_bytes < 0) {
-            this->tcp_ctrlr->client_disconnected(this);
+            this->tcp_ctrlr->client_disconnected(this->tcp_ctrlr, this);
             this->tcp_ctrlr->RemoveClientFromDB(this);
             free(this->client_thread);
             this->client_thread = NULL;
@@ -136,7 +136,7 @@ TcpClient::ClientThreadFunction() {
         }
         else if (this->tcp_ctrlr->client_msg_recvd) {
             this->conn.bytes_recvd += rcv_bytes;
-            this->tcp_ctrlr->client_msg_recvd(this, this->recv_buffer, rcv_bytes);
+            this->tcp_ctrlr->client_msg_recvd(this->tcp_ctrlr, this, this->recv_buffer, rcv_bytes);
         }
      }
 }
@@ -180,7 +180,7 @@ TcpClient::StopThread() {
     free(this->client_thread);
     this->client_thread = NULL;
     this->Dereference();
-    this->tcp_ctrlr->client_disconnected(this);
+    this->tcp_ctrlr->client_disconnected(this->tcp_ctrlr, this);
 }
 
 void 

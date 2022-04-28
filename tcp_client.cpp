@@ -61,7 +61,7 @@ setup_tcp_communication(){
     dest.sin_addr = *((struct in_addr *)host->h_addr);
 
     /*Step 3 : Create a TCP socket*/
-    /*Create a socket finally. socket() is a system call, which asks for three paramemeters*/
+    /*Create a socket finally. socket() is a system call, which asks for three parameters*/
     sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 #if 0
     /*to specify the client IP Address and Port no*/
@@ -118,7 +118,7 @@ PROMPT_USER:
     /*Step 6 : Client also want to reply from server after sending data*/
     
     /*recvfrom is a blocking system call, meaning the client program will not run past this point
-     * untill the data arrives on the socket from server*/
+     * until the data arrives on the socket from server*/
     printf("Waiting for response:\n");
     sent_recv_bytes =  recvfrom(sockfd, (char *)&result, sizeof(result_struct_t), 0,
                     (struct sockaddr *)&dest, &addr_len);

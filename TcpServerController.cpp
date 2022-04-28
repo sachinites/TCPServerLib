@@ -118,10 +118,10 @@ TcpServerController::SetClientCreationMode(bool status) {
 
 void
 TcpServerController::SetServerNotifCallbacks(
-                void (*client_connected)(const TcpClient *), 
-                void (*client_disconnected)(const TcpClient *),
-                void (*client_msg_recvd)(const TcpClient *, unsigned char *, uint16_t),
-                void (*client_ka_pending)(const TcpClient *) ) {
+                void (*client_connected)(const TcpServerController *, const TcpClient *), 
+                void (*client_disconnected)(const TcpServerController *, const TcpClient *),
+                void (*client_msg_recvd)(const TcpServerController *, const TcpClient *, unsigned char *, uint16_t),
+                void (*client_ka_pending)(const TcpServerController *, const TcpClient *) ) {
 
     /* Should be called before invoking Start() on TCP Server */
     assert (this->state_flags == TCP_SERVER_INITIALIZED);
