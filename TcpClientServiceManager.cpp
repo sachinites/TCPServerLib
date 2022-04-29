@@ -126,6 +126,7 @@ TcpClientServiceManager::StartTcpClientServiceManagerThreadInternal() {
                     this->RemoveClientFromDB(tcp_client);
                     this->max_fd = this->GetMaxFd();
                     this->tcp_ctrlr->RemoveClientFromDB(tcp_client);
+                    this->tcp_ctrlr->RemoveClientFromTcpServerList(tcp_client);
                     tcp_client->Abort();
                 }
                 else {

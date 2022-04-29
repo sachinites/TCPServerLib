@@ -91,6 +91,10 @@ TcpNewConnectionAcceptor::StartTcpNewConnectionAcceptorThreadInternal() {
         tcp_client->tcp_ctrlr = this->tcp_ctrlr;
         tcp_client->comm_fd = comm_sock_fd;
 
+        if (this->tcp_ctrlr->client_connected) {
+            this->tcp_ctrlr->client_connected(this->tcp_ctrlr, tcp_client);
+        }
+        
         /* Tell the TCP Controller, to further process the Client */
         this->tcp_ctrlr->ProcessNewClient(tcp_client);
         

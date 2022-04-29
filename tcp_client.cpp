@@ -8,7 +8,7 @@
 #include <errno.h>
 #include <arpa/inet.h>
 
-#define DEST_PORT            40000
+#define DEST_PORT            50000
 #define SERVER_IP_ADDRESS   "127.0.0.1"
 
 #define SRC_PORT	     40001

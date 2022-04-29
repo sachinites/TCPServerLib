@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <string>
 #include <pthread.h>
+#include <list>
 #include "TcpMsgDemarcar.h"
 
 class TcpNewConnectionAcceptor;
@@ -26,6 +27,9 @@ private:
     TcpClientDbManager *tcp_client_db_mgr;
     TcpClientServiceManager *tcp_client_svc_mgr;
     uint32_t state_flags;
+    std::list<TcpClient *> tcp_clients_lst;
+    void AddClientToTcpServerList(TcpClient *);
+    void FlushServerClientList();
 
 public:
     /* State Variables */
@@ -72,6 +76,11 @@ public:
     void CreateMultiThreadedClient(TcpClient *);
 
     void SetTcpMsgDemarcar(TcpMsgDemarcarType);
+
+    /* Print the Tcp Server Details */
+    void Display();
+    /* Made public because needs to be invoked from DRS Service also */
+    void RemoveClientFromTcpServerList(TcpClient *);
 };
 
 

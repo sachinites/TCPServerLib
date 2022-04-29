@@ -4,6 +4,7 @@
 #include "TcpClientDBManager.h"
 #include "TcpClientServiceManager.h"
 #include "TcpNewConnectionAcceptor.h"
+#include <TcpClient.h>
 #include "network_utils.h"
 
 TcpServerController::TcpServerController(
@@ -36,6 +37,45 @@ TcpServerController::Start() {
 void
 TcpServerController::ProcessNewClient(TcpClient *tcp_client) {
 
+    this->AddClientToTcpServerList(tcp_client);
     this->tcp_client_db_mgr->AddClientToDB(tcp_client);
     this->tcp_client_svc_mgr->ClientFDStartListen(tcp_client);
+}
+
+ void TcpServerController::SetServerNotifCallbacks(
+                void (*client_connected)(const TcpServerController *, const TcpClient *),
+                void (*client_disconnected)(const TcpServerController *, const TcpClient *),
+                void (*client_msg_recvd)(const TcpServerController *, const TcpClient *, unsigned char *, uint16_t)) {
+
+        this->client_connected = client_connected;
+        this->client_disconnected = client_disconnected;
+        this->client_msg_recvd = client_msg_recvd;
+}
+
+void 
+TcpServerController::AddClientToTcpServerList(TcpClient *tcp_client) {
+
+    this->tcp_clients_lst.push_back(tcp_client);
+}
+
+void
+TcpServerController::RemoveClientFromTcpServerList(TcpClient *tcp_client) {
+
+    this->tcp_clients_lst.remove(tcp_client);
+}
+
+void
+TcpServerController::Display() {
+
+    TcpClient *tcp_client;
+    std::list<TcpClient *>::iterator it;
+
+    printf ("Server Name : %s\n", this->name);
+    printf ("Listening on : [%s, %d]\n", network_convert_ip_n_to_p(this->ip_addr, 0), this->port_no);
+
+    for (it = this->tcp_clients_lst.begin(); it != this->tcp_clients_lst.end(); ++it) {
+
+        tcp_client = *it;
+        tcp_client->Display();
+    }
 }

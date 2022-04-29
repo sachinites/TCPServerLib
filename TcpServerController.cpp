@@ -55,6 +55,7 @@ TcpServerController::Stop() {
     this->tcp_client_svc_mgr->Stop();
     this->tcp_client_svc_mgr = NULL;
 
+    this->FlushServerClientList();
     /* Stopping the above two services first ensures that
         now no thread is alive which could add tcpclient back into
         DB */
@@ -141,6 +142,8 @@ TcpServerController::CreateMultiThreadedClient(TcpClient *tcp_client) {
 void
 TcpServerController::ProcessNewClient(TcpClient *tcp_client) {
 
+    this->AddClientToTcpServerList(tcp_client);
+
     this->tcp_client_db_mgr->AddClientToDB(tcp_client);
 
     if (IS_BIT_SET(this->state_flags , TCP_SERVER_CREATE_MULTI_THREADED_CLIENT)) {
@@ -163,6 +166,8 @@ TcpServerController::ProcessClientDelete(uint32_t ip_addr, uint16_t port_no) {
         printf ("Error : Such a client dont exist \n");
         return;
     }
+
+     this->RemoveClientFromTcpServerList(tcp_client);
 
     if (!tcp_client->client_thread) {
         this->tcp_client_svc_mgr->ClientFDStopListen(tcp_client);
@@ -221,4 +226,49 @@ void
 TcpServerController::SetTcpMsgDemarcar(TcpMsgDemarcarType msgd_type) {
 
     this->msgd_type = msgd_type;
+}
+
+void 
+TcpServerController::AddClientToTcpServerList(TcpClient *tcp_client) {
+
+    this->tcp_clients_lst.push_back(tcp_client);
+    tcp_client->Reference();
+}
+
+void
+TcpServerController::RemoveClientFromTcpServerList(TcpClient *tcp_client) {
+
+    this->tcp_clients_lst.remove(tcp_client);
+    tcp_client->Dereference();
+}
+
+void
+TcpServerController::FlushServerClientList() {
+
+    std::list<TcpClient *>::iterator it;
+    TcpClient *tcp_client, *next_tcp_client;
+
+    for (it = this->tcp_clients_lst.begin(), tcp_client = *it;
+         it != this->tcp_clients_lst.end();
+         tcp_client = next_tcp_client)
+    {
+        this->RemoveClientFromTcpServerList(tcp_client);
+        next_tcp_client = *(++it);
+    }
+}
+
+void
+TcpServerController::Display() {
+
+    TcpClient *tcp_client;
+    std::list<TcpClient *>::iterator it;
+
+    printf ("Server Name : %s\n", this->name.c_str());
+    printf ("Listening on : [%s, %d]\n", network_convert_ip_n_to_p(this->ip_addr, 0), this->port_no);
+
+    for (it = this->tcp_clients_lst.begin(); it != this->tcp_clients_lst.end(); ++it) {
+
+        tcp_client = *it;
+        tcp_client->Display();
+    }
 }

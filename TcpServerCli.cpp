@@ -222,7 +222,7 @@ show_tcp_server_handler (param_t *param,
                 printf ("Error : Tcp Server do not Exist\n");
                 return -1;
             }
-            //tcp_server->Display();
+            tcp_server->Display();
             break;
         default:
             ;
@@ -235,12 +235,12 @@ tcp_build_show_cli_tree() {
 
     param_t *show_hook = libcli_get_show_hook();
 
-    /* config tcp-server ... */
+    /* show tcp-server ... */
         static param_t tcp_server;
         init_param(&tcp_server, CMD, "tcp-server", 0, 0, INVALID, 0, "config tcp-server");
         libcli_register_param(show_hook, &tcp_server);
         {
-            /* config tcp-server <name> */
+            /*show  tcp-server <name> */
             static param_t tcp_server_name;
             init_param(&tcp_server_name, LEAF, 0, show_tcp_server_handler, 0, STRING, "tcp-server-name", "config tcp-server name");
             libcli_register_param(&tcp_server, &tcp_server_name);
