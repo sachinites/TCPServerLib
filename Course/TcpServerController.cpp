@@ -73,9 +73,5 @@ TcpServerController::Display() {
     printf ("Server Name : %s\n", this->name);
     printf ("Listening on : [%s, %d]\n", network_convert_ip_n_to_p(this->ip_addr, 0), this->port_no);
 
-    for (it = this->tcp_clients_lst.begin(); it != this->tcp_clients_lst.end(); ++it) {
-
-        tcp_client = *it;
-        tcp_client->Display();
-    }
+   this->tcp_client_db_mgr.D
 }
