@@ -4,7 +4,7 @@
 #include "TcpClientDBManager.h"
 #include "TcpClientServiceManager.h"
 #include "TcpNewConnectionAcceptor.h"
-#include <TcpClient.h>
+#include "TcpClient.h"
 #include "network_utils.h"
 
 TcpServerController::TcpServerController(
@@ -67,11 +67,8 @@ TcpServerController::RemoveClientFromTcpServerList(TcpClient *tcp_client) {
 void
 TcpServerController::Display() {
 
-    TcpClient *tcp_client;
-    std::list<TcpClient *>::iterator it;
-
-    printf ("Server Name : %s\n", this->name);
+    printf ("Server Name : %s\n", this->name.c_str());
     printf ("Listening on : [%s, %d]\n", network_convert_ip_n_to_p(this->ip_addr, 0), this->port_no);
 
-   this->tcp_client_db_mgr.D
+    this->tcp_client_db_mgr->DisplayClientDb();
 }
