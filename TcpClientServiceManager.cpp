@@ -210,7 +210,6 @@ TcpClientServiceManager::ClientFDStartListen(TcpClient *tcp_client) {
         this->max_fd = tcp_client->comm_fd;
     }
 
-    this->tcp_ctrlr->client_connected(this->tcp_ctrlr, tcp_client);
     FD_SET(tcp_client->comm_fd, &this->backup_fd_set);
     sem_post(&this->sem0_2);
 }

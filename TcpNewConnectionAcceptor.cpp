@@ -107,11 +107,19 @@ TcpNewConnectionAcceptor::StartTcpNewConnectionAcceptorThreadInternal() {
         tcp_client->ip_addr = client_addr.sin_addr.s_addr;
         tcp_client->port_no = client_addr.sin_port;
         tcp_client->tcp_ctrlr = this->tcp_ctrlr;
+
+        if (this->tcp_ctrlr->client_connected) {
+            this->tcp_ctrlr->client_connected(this->tcp_ctrlr, tcp_client);
+        }
+
         tcp_client->SendMsg("Welcome\n", strlen("Welcome\n"));
+
         tcp_client->SetTcpMsgDemarcar(
             TcpMsgDemarcar::InstantiateTcpMsgDemarcar(
                 this->tcp_ctrlr->msgd_type, 8, 0, 0, 0, 0));
+
         tcp_client->SetConnectionType(tcp_conn_via_accept);
+        
         this->tcp_ctrlr->ProcessNewClient (tcp_client);
     }
 }
