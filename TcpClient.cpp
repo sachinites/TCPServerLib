@@ -89,11 +89,19 @@ TcpClient::Abort() {
     delete this;
 }
 
-void
+TcpClient *
 TcpClient::Dereference() {
 
-    assert(ref_count);
-    ref_count--;
+    if (this->ref_count == 0) {
+        this->Abort();
+        return NULL;
+    }
+    
+    this->ref_count--;
+
+    if (this->ref_count) return this;
+    this->Abort();
+    return NULL;
 }
 
 void
@@ -127,7 +135,6 @@ TcpClient::ClientThreadFunction() {
             free(this->client_thread);
             this->client_thread = NULL;
             this->Dereference();
-            this->Abort();
             pthread_exit(0);
         }
         else if (this->msgd) {
@@ -179,16 +186,16 @@ TcpClient::StopThread() {
     pthread_join(*(this->client_thread), NULL);
     free(this->client_thread);
     this->client_thread = NULL;
-    this->Dereference();
     this->tcp_ctrlr->client_disconnected(this->tcp_ctrlr, this);
+    this->Dereference();
 }
 
 void 
 TcpClient::trace() {
 
-    printf ("[%s , %d]\n", 
+    printf ("Tcp Client : [%s , %d]   ref count = %d\n", 
         network_convert_ip_n_to_p(htonl(this->ip_addr), 0),
-        htons(this->port_no));
+        htons(this->port_no), this->ref_count);
 }
 
 void 

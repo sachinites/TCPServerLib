@@ -16,6 +16,8 @@ class TcpClient {
 
     private:
         pthread_rwlock_t rwlock;
+        void Abort();
+
     public :
         uint32_t ip_addr;
         uint16_t port_no;
@@ -37,9 +39,8 @@ class TcpClient {
         void StopThread();
         void ClientThreadFunction();
         void trace();
-        void Dereference();
+        TcpClient * Dereference();
         void Reference();
-        void Abort();
         void Display();
         void SetTcpMsgDemarcar(TcpMsgDemarcar  *);
         void SetConnectionType(tcp_connection_type_t);

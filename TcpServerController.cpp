@@ -172,8 +172,6 @@ TcpServerController::ProcessClientDelete(uint32_t ip_addr, uint16_t port_no) {
     if (!tcp_client->client_thread) {
         this->tcp_client_svc_mgr->ClientFDStopListen(tcp_client);
     }
-    
-    tcp_client->Abort();
 }
 
 void
@@ -252,8 +250,8 @@ TcpServerController::FlushServerClientList() {
          it != this->tcp_clients_lst.end();
          tcp_client = next_tcp_client)
     {
-        this->RemoveClientFromTcpServerList(tcp_client);
         next_tcp_client = *(++it);
+        this->RemoveClientFromTcpServerList(tcp_client);
     }
 }
 

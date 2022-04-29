@@ -64,14 +64,19 @@ TcpClient *
 TcpClientDbManager::RemoveClientFromDB(uint32_t ip_addr, uint16_t port_no) {
     
     TcpClient *tcp_client;
+
     pthread_rwlock_wrlock(&this->rwlock);
+
     tcp_client = this->LookUpClientDB(ip_addr, port_no);
+
     if (!tcp_client) {
         pthread_rwlock_unlock(&this->rwlock);
         return NULL;
     }
+
     this->tcp_client_db.remove(tcp_client);
-    tcp_client->Dereference();
+    tcp_client = tcp_client->Dereference();
+
     pthread_rwlock_unlock(&this->rwlock);
     return tcp_client;
 }
@@ -95,14 +100,10 @@ TcpClientDbManager::Purge() {
 
         next_tcp_client = *(++it);
 
+      if (tcp_client->client_thread) tcp_client->StopThread();
+
        this->tcp_client_db.remove(tcp_client);
-        tcp_client->Dereference();
-
-        if (tcp_client->client_thread) tcp_client->StopThread();
-
-        if (tcp_client->ref_count == 0) {
-            tcp_client->Abort();
-        }
+       tcp_client->Dereference();
     }
     pthread_rwlock_unlock(&this->rwlock);
 }

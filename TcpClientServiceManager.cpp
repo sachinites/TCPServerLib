@@ -127,7 +127,6 @@ TcpClientServiceManager::StartTcpClientServiceManagerThreadInternal() {
                     this->max_fd = this->GetMaxFd();
                     this->tcp_ctrlr->RemoveClientFromDB(tcp_client);
                     this->tcp_ctrlr->RemoveClientFromTcpServerList(tcp_client);
-                    tcp_client->Abort();
                 }
                 else {
                     /* If client has a TcpMsgDemarcar, then push the data to Demarcar, else notify the application straightaway */
@@ -338,10 +337,6 @@ TcpClientServiceManager::Purge() {
 
         this->tcp_client_db.remove(tcp_client);
         tcp_client->Dereference();
-
-        if (tcp_client->ref_count == 0) {
-            tcp_client->Abort();
-        }
     }
 }
 
@@ -349,6 +344,7 @@ void
 TcpClientServiceManager::Stop() {
 
     this->StopTcpClientServiceManagerThread();
+    close(this->udp_fd);
     Purge();
 }
 
