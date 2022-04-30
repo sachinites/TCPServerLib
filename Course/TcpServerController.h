@@ -17,11 +17,7 @@ class TcpServerController {
         TcpClientDbManager *tcp_client_db_mgr;
         TcpClientServiceManager *tcp_client_svc_mgr;
 
-        void AddClientToTcpServerList(TcpClient *);
-        void RemoveClientFromTcpServerList(TcpClient *);
-        std::list<TcpClient *> tcp_clients_lst;
-
-    public:
+     public:
         uint32_t ip_addr;
         uint16_t port_no;
         std::string name;

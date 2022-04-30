@@ -26,6 +26,7 @@ class TcpClientServiceManager{
         void ForceUnblockSelect();
         void TcpClientMigrate(TcpClient *);
         void Purge();
+
     public:
         TcpServerController *tcp_ctrlr;
         TcpClientServiceManager(TcpServerController *);

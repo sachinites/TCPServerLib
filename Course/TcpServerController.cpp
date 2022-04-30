@@ -37,7 +37,6 @@ TcpServerController::Start() {
 void
 TcpServerController::ProcessNewClient(TcpClient *tcp_client) {
 
-    this->AddClientToTcpServerList(tcp_client);
     this->tcp_client_db_mgr->AddClientToDB(tcp_client);
     this->tcp_client_svc_mgr->ClientFDStartListen(tcp_client);
 }
@@ -50,18 +49,6 @@ TcpServerController::ProcessNewClient(TcpClient *tcp_client) {
         this->client_connected = client_connected;
         this->client_disconnected = client_disconnected;
         this->client_msg_recvd = client_msg_recvd;
-}
-
-void 
-TcpServerController::AddClientToTcpServerList(TcpClient *tcp_client) {
-
-    this->tcp_clients_lst.push_back(tcp_client);
-}
-
-void
-TcpServerController::RemoveClientFromTcpServerList(TcpClient *tcp_client) {
-
-    this->tcp_clients_lst.remove(tcp_client);
 }
 
 void

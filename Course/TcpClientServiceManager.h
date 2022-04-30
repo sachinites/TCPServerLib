@@ -7,7 +7,7 @@ class TcpClient;
 class TcpClientServiceManager{
 
     private:
-
+        std::list<TcpClient *>tcp_client_db;
     public:
         TcpServerController *tcp_ctrlr;
         TcpClientServiceManager(TcpServerController *);
