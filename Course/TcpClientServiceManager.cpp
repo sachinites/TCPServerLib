@@ -22,6 +22,45 @@ TcpClientServiceManager::~TcpClientServiceManager() {
     
 }
 
+int
+TcpClientServiceManager::GetMaxFd() {
+
+    int max_fd_lcl = 0;
+
+    TcpClient *tcp_client;
+    std::list<TcpClient *>::iterator it;
+
+    for (it = this->tcp_client_db.begin(); it != this->tcp_client_db.end(); ++it) {
+
+        tcp_client = *it;
+        if (tcp_client->comm_fd > max_fd_lcl ) {
+            max_fd_lcl = tcp_client->comm_fd;
+        }
+    }
+    return max_fd_lcl;
+}
+
+void
+TcpClientServiceManager::CopyClientFDtoFDSet(fd_set *fdset) {
+
+    TcpClient *tcp_client;
+     std::list<TcpClient *>::iterator it;
+
+      for (it = this->tcp_client_db.begin(); 
+            it != this->tcp_client_db.end();
+            ++it) {
+
+        tcp_client = *it;
+        FD_SET(tcp_client->comm_fd, fdset);
+    }
+}
+
+void
+TcpClientServiceManager::AddClientToDB(TcpClient *tcp_client){
+
+     this->tcp_client_db.push_back(tcp_client);
+}
+
 void
 TcpClientServiceManager::StartTcpClientServiceManagerThreadInternal() {
 
@@ -32,6 +71,11 @@ TcpClientServiceManager::StartTcpClientServiceManagerThreadInternal() {
     std::list<TcpClient *>::iterator it;
 
     socklen_t addr_len = sizeof(client_addr);
+
+    this->max_fd = this->GetMaxFd();
+
+    FD_ZERO(&this->backup_fd_set);
+    this->CopyClientFDtoFDSet(&this->backup_fd_set);
 
     while(true) {
 
@@ -67,6 +111,9 @@ tcp_client_svc_manager_thread_fn(void *arg) {
     TcpClientServiceManager *svc_mgr = 
         (TcpClientServiceManager *)arg;
 
+    pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+    pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
+
     svc_mgr->StartTcpClientServiceManagerThreadInternal();
     return NULL;
 }
@@ -81,6 +128,23 @@ TcpClientServiceManager::StartTcpClientServiceManagerThread() {
     printf("Service started : TcpClientServiceManagerThread\n");
 }
 
+void
+TcpClientServiceManager::StopTcpClientServiceManagerThread() {
+
+    pthread_cancel(*this->client_svc_mgr_thread);
+    pthread_join(*this->client_svc_mgr_thread, NULL);
+    free(this->client_svc_mgr_thread);
+    this->client_svc_mgr_thread = NULL;
+}
+
+
 void TcpClientServiceManager::ClientFDStartListen(TcpClient *tcp_client) {
 
+    this->StopTcpClientServiceManagerThread();
+    printf ("Client Svc Mgr Thread is cancelled\n");
+
+    this->AddClientToDB(tcp_client);
+    
+    this->client_svc_mgr_thread = (pthread_t *)calloc(1, sizeof(pthread_t));
+    this->StartTcpClientServiceManagerThread();
 }

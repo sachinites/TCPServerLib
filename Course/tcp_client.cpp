@@ -116,7 +116,7 @@ PROMPT_USER:
     printf("No of bytes sent = %d\n", sent_recv_bytes);
   
     /*Step 6 : Client also want to reply from server after sending data*/
-    
+    #if 0
     /*recvfrom is a blocking system call, meaning the client program will not run past this point
      * untill the data arrives on the socket from server*/
     printf("Waiting for response:\n");
@@ -126,6 +126,7 @@ PROMPT_USER:
     printf("No of bytes recvd = %d\n", sent_recv_bytes);
     
     printf("Result recvd = %u\n", result.c);
+    #endif
     /*Step 7: Client would want to send the data again to the server, go into infinite loop*/
     goto PROMPT_USER;
 }

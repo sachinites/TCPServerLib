@@ -12,6 +12,9 @@ class TcpClientServiceManager{
         fd_set backup_fd_set;
         pthread_t *client_svc_mgr_thread;
         std::list<TcpClient *>tcp_client_db;
+        int GetMaxFd();
+        void CopyClientFDtoFDSet(fd_set *);
+
     public:
         TcpServerController *tcp_ctrlr;
         TcpClientServiceManager(TcpServerController *);
@@ -20,6 +23,8 @@ class TcpClientServiceManager{
         void StartTcpClientServiceManagerThread();
         void StartTcpClientServiceManagerThreadInternal();
         void ClientFDStartListen(TcpClient *);
+        void StopTcpClientServiceManagerThread();
+        void AddClientToDB(TcpClient *);
 };
 
 #endif

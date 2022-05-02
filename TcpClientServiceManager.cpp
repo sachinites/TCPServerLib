@@ -167,7 +167,6 @@ TcpClientServiceManager::StartTcpClientServiceManagerThreadInternal() {
     int rcv_bytes;
     TcpClient *tcp_client, *next_tcp_client;
     struct sockaddr_in client_addr;
-    unsigned char dummy_msg;
     std::list<TcpClient *>::iterator it;
 
     socklen_t addr_len = sizeof(client_addr);
@@ -222,15 +221,6 @@ TcpClientServiceManager::StartTcpClientServiceManagerThreadInternal() {
                 }
             }
         }
-
-        
-        if (FD_ISSET(this->udp_fd, &this->active_fd_set)) {
-
-            recvfrom(this->udp_fd, &dummy_msg, 1, 0 , (struct sockaddr *)&client_addr, &addr_len);
-            sem_post(&this->sem0_1);
-            sem_wait(&this->sem0_2);
-        }
-
     } // while ends
 }
 
