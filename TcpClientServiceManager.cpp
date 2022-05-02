@@ -80,8 +80,9 @@ TcpClientServiceManager::CopyClientFDtoFDSet(fd_set *fdset) {
     TcpClient *tcp_client;
      std::list<TcpClient *>::iterator it;
 
-      for (it = this->tcp_client_db.begin(); tcp_client = *it;
-             it != this->tcp_client_db.end()) {
+      for (it = this->tcp_client_db.begin(); 
+            it != this->tcp_client_db.end();
+            ++it) {
 
         tcp_client = *it;
         FD_SET(tcp_client->comm_fd, fdset);

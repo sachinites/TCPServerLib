@@ -2,6 +2,8 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <memory.h>
+#include <errno.h>
+#include <unistd.h>
 #include "TcpServerController.h"
 #include "TcpClientServiceManager.h"
 #include "TcpClient.h"
@@ -96,6 +98,10 @@ TcpClientServiceManager::StartTcpClientServiceManagerThreadInternal() {
                                                         0,
                                                         (struct sockaddr *)&client_addr, &addr_len);
 
+                    if (rcv_bytes == 0 ) {
+                        printf ("error no = %d\n", errno);
+                        sleep(1);
+                    }
                     if (this->tcp_ctrlr->client_msg_recvd) {
                         this->tcp_ctrlr->client_msg_recvd(this->tcp_ctrlr, tcp_client,
                                         client_recv_buffer, rcv_bytes);
