@@ -13,6 +13,9 @@
 #include "TcpClient.h"
 #include "network_utils.h"
 
+#define CLIENT_RECV_BUFFER_SIZE 1024 
+static unsigned char common_recv_buffer[CLIENT_RECV_BUFFER_SIZE];
+
 TcpClientServiceManager::TcpClientServiceManager(TcpServerController *tcp_ctrlr) {
 
     this->tcp_ctrlr = tcp_ctrlr;
@@ -72,7 +75,22 @@ TcpClientServiceManager::AddClientToDB(TcpClient *tcp_client){
 }
 
 void
-TcpClientServiceManager::StartTcpClientServiceManagerThreadInternal() {
+TcpClientServiceManager::CopyClientFDtoFDSet(fd_set *fdset) {
+
+    TcpClient *tcp_client;
+     std::list<TcpClient *>::iterator it;
+
+      for (it = this->tcp_client_db.begin(); tcp_client = *it;
+             it != this->tcp_client_db.end()) {
+
+        tcp_client = *it;
+        FD_SET(tcp_client->comm_fd, fdset);
+    }
+}
+
+/* Deprecated */
+void
+TcpClientServiceManager::StartTcpClientServiceManagerThreadInternal2() {
 
     int rcv_bytes;
     TcpClient *tcp_client, *next_tcp_client;
@@ -95,14 +113,6 @@ TcpClientServiceManager::StartTcpClientServiceManagerThreadInternal() {
         memcpy (&this->active_fd_set, &this->backup_fd_set, sizeof(fd_set));
 
         select(this->max_fd + 1 , &this->active_fd_set, NULL, NULL, NULL);
-
-        if (FD_ISSET(this->udp_fd, &this->active_fd_set)) {
-
-            recvfrom(this->udp_fd, &dummy_msg, 1, 0 , (struct sockaddr *)&client_addr, &addr_len);
-            sem_post(&this->sem0_1);
-            sem_wait(&this->sem0_2);
-            continue;
-        }
 
         /* Iterate so that we can delete the current element while traversing */
         for (it = this->tcp_client_db.begin(), tcp_client = *it;
@@ -139,6 +149,88 @@ TcpClientServiceManager::StartTcpClientServiceManagerThreadInternal() {
                 }
             }
         }
+
+        if (FD_ISSET(this->udp_fd, &this->active_fd_set)) {
+
+            recvfrom(this->udp_fd, &dummy_msg, 1, 0 , (struct sockaddr *)&client_addr, &addr_len);
+            sem_post(&this->sem0_1);
+            sem_wait(&this->sem0_2);
+            continue;
+        }
+    } // while ends
+}
+
+
+void
+TcpClientServiceManager::StartTcpClientServiceManagerThreadInternal() {
+
+    int rcv_bytes;
+    TcpClient *tcp_client, *next_tcp_client;
+    struct sockaddr_in client_addr;
+    unsigned char dummy_msg;
+    std::list<TcpClient *>::iterator it;
+
+    socklen_t addr_len = sizeof(client_addr);
+
+    this->max_fd = this->GetMaxFd();
+  
+    FD_ZERO(&this->backup_fd_set);
+    this->CopyClientFDtoFDSet(&this->backup_fd_set);
+
+    sem_post(&this->wait_for_thread_operation_to_complete);
+
+    while(true) {
+
+        pthread_testcancel();
+        
+        memcpy (&this->active_fd_set, &this->backup_fd_set, sizeof(fd_set));
+
+        select(this->max_fd + 1 , &this->active_fd_set, NULL, NULL, NULL);
+
+        /* Iterate so that we can delete the current element while traversing */
+        for (it = this->tcp_client_db.begin(), tcp_client = *it;
+             it != this->tcp_client_db.end();
+             tcp_client = next_tcp_client){
+
+            next_tcp_client = *(++it);
+
+            if (FD_ISSET(tcp_client->comm_fd, &this->active_fd_set)) {
+
+                rcv_bytes = recvfrom(tcp_client->comm_fd,
+                        common_recv_buffer,
+                        CLIENT_RECV_BUFFER_SIZE,
+                        0, 
+                        (struct sockaddr *)&client_addr, &addr_len);
+
+                if (rcv_bytes == 0 || rcv_bytes == 65535 || rcv_bytes < 0) {
+                    this->tcp_ctrlr->client_disconnected(this->tcp_ctrlr, tcp_client);
+                    /* Remove FD from fd_set otherwise, select will go in infinite loop*/
+                    FD_CLR(tcp_client->comm_fd, &this->backup_fd_set);
+                    this->RemoveClientFromDB(tcp_client);
+                    this->max_fd = this->GetMaxFd();
+                    this->tcp_ctrlr->RemoveClientFromDB(tcp_client);
+                }
+                else {
+                    /* If client has a TcpMsgDemarcar, then push the data to Demarcar, else notify the application straightaway */
+                       tcp_client->conn.bytes_recvd += rcv_bytes;
+                       if (tcp_client->msgd) {
+                           tcp_client->msgd->ProcessMsg(tcp_client, common_recv_buffer, rcv_bytes);
+                       }
+                       else if (this->tcp_ctrlr->client_msg_recvd){
+                            this->tcp_ctrlr->client_msg_recvd(this->tcp_ctrlr, tcp_client, common_recv_buffer, rcv_bytes);
+                       }
+                }
+            }
+        }
+
+        
+        if (FD_ISSET(this->udp_fd, &this->active_fd_set)) {
+
+            recvfrom(this->udp_fd, &dummy_msg, 1, 0 , (struct sockaddr *)&client_addr, &addr_len);
+            sem_post(&this->sem0_1);
+            sem_wait(&this->sem0_2);
+        }
+
     } // while ends
 }
 
@@ -162,6 +254,10 @@ TcpClientServiceManager::StartTcpClientServiceManagerThread() {
 
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+
+    if (!this->client_svc_mgr_thread) {
+        this->client_svc_mgr_thread = (pthread_t *)calloc(1, sizeof(pthread_t));
+    }
 
     pthread_create(this->client_svc_mgr_thread, &attr,  
                             tcp_client_svc_manager_thread_fn, (void *)this);
@@ -194,7 +290,7 @@ TcpClientServiceManager::LookUpClientDB(uint32_t ip_addr, uint16_t port_no) {
 }
 
 void
-TcpClientServiceManager::ClientFDStartListen(TcpClient *tcp_client) {
+TcpClientServiceManager::ClientFDStartListen2(TcpClient *tcp_client) {
 
     ForceUnblockSelect();
     
@@ -210,6 +306,18 @@ TcpClientServiceManager::ClientFDStartListen(TcpClient *tcp_client) {
 
     FD_SET(tcp_client->comm_fd, &this->backup_fd_set);
     sem_post(&this->sem0_2);
+}
+
+void
+TcpClientServiceManager::ClientFDStartListen(TcpClient *tcp_client) {
+
+    this->StopTcpClientServiceManagerThread();
+    printf ("Client Svc Mgr thread Cancelled\n");
+
+    assert(!this->LookUpClientDB(tcp_client->ip_addr, tcp_client->port_no));
+    this->AddClientToDB(tcp_client);
+  
+    this->StartTcpClientServiceManagerThread();
 }
 
 /* Overloaded fn */
@@ -268,6 +376,25 @@ TcpClientServiceManager::StopListeningAllClients() {
 
 int
 TcpClientServiceManager::GetMaxFd() {
+
+    int max_fd_lcl = 0;
+
+    TcpClient *tcp_client;
+    std::list<TcpClient *>::iterator it;
+
+    for (it = this->tcp_client_db.begin(); it != this->tcp_client_db.end(); ++it) {
+
+        tcp_client = *it;
+        if (tcp_client->comm_fd > max_fd_lcl ) {
+            max_fd_lcl = tcp_client->comm_fd;
+        }
+    }
+    return max_fd_lcl;
+}
+
+/* Deprecated */
+int
+TcpClientServiceManager::GetMaxFd2() {
 
     int max_fd_lcl = 0;
 

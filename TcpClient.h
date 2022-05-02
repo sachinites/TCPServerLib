@@ -17,7 +17,8 @@ class TcpClient {
     private:
         pthread_rwlock_t rwlock;
         void Abort();
-
+        ~TcpClient();
+        
     public :
         uint32_t ip_addr;
         uint16_t port_no;
@@ -33,7 +34,7 @@ class TcpClient {
         TcpClient(uint32_t, uint16_t);
         TcpClient();
         TcpClient (TcpClient *);
-        ~TcpClient();
+        
 	    int SendMsg(char *, uint32_t);
         void StartThread();
         void StopThread();

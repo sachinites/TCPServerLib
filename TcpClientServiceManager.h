@@ -18,6 +18,7 @@ class TcpClientServiceManager{
         fd_set active_fd_set;
         fd_set backup_fd_set;
         int GetMaxFd();
+        int GetMaxFd2();
         pthread_t *client_svc_mgr_thread;
         sem_t wait_for_thread_operation_to_complete;
         sem_t sem0_1, sem0_2;
@@ -26,7 +27,7 @@ class TcpClientServiceManager{
         void ForceUnblockSelect();
         void TcpClientMigrate(TcpClient *);
         void Purge();
-
+        void CopyClientFDtoFDSet(fd_set *fdset) ;
     public:
         TcpServerController *tcp_ctrlr;
         TcpClientServiceManager(TcpServerController *);
@@ -34,9 +35,11 @@ class TcpClientServiceManager{
 
         void StartTcpClientServiceManagerThread();
         void StartTcpClientServiceManagerThreadInternal();
+        void StartTcpClientServiceManagerThreadInternal2();
         void StopTcpClientServiceManagerThread();
         void StopListeningAllClients();
         void ClientFDStartListen(TcpClient *);
+        void ClientFDStartListen2(TcpClient *); 
         void RemoveClientFromDB(TcpClient *);
         void AddClientToDB(TcpClient *);
         TcpClient* ClientFDStopListen(uint32_t , uint16_t);
