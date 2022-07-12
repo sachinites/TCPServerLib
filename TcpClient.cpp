@@ -8,9 +8,10 @@
 #include <errno.h>
 #include <netdb.h>
 #include <arpa/inet.h>
+#include<sys/wait.h>
 #include "TcpClient.h"
-#include "TcpClientServiceManager.h"
 #include "TcpServerController.h"
+#include "TcpClientServiceManager.h"
 #include "network_utils.h"
 
 TcpClient::TcpClient(uint32_t ip_addr, uint16_t port_no) {
@@ -118,9 +119,14 @@ TcpClient::ClientThreadFunction() {
 
     socklen_t addr_len = sizeof(client_addr);
 
-    this->tcp_ctrlr->client_connected(this->tcp_ctrlr, this);
+#if 0
+    if (this->tcp_ctrlr->client_connected) {
+        this->tcp_ctrlr->client_connected(this->tcp_ctrlr, this);
+    }
+#endif
 
     while (1) {
+
         pthread_testcancel();
 
         rcv_bytes = recvfrom(this->comm_fd,
@@ -130,20 +136,23 @@ TcpClient::ClientThreadFunction() {
                              (struct sockaddr *)&client_addr, &addr_len);
 
         if (rcv_bytes == 0 || rcv_bytes == 65535 || rcv_bytes < 0) {
-            this->tcp_ctrlr->client_disconnected(this->tcp_ctrlr, this);
-            this->tcp_ctrlr->RemoveClientFromDB(this);
-            free(this->client_thread);
-            this->client_thread = NULL;
-            this->Dereference();
-            pthread_exit(0);
+
+            if (this->tcp_ctrlr->client_disconnected) {
+                this->tcp_ctrlr->client_disconnected(this->tcp_ctrlr, this);
+            }
+            this->tcp_ctrlr->EnqueueClientDeletionRequest(this);
+            pause();
         }
+
         else if (this->msgd) {
             this->conn.bytes_recvd += rcv_bytes;
             this->msgd->ProcessMsg(this, this->recv_buffer, rcv_bytes);
         }
         else if (this->tcp_ctrlr->client_msg_recvd) {
             this->conn.bytes_recvd += rcv_bytes;
-            this->tcp_ctrlr->client_msg_recvd(this->tcp_ctrlr, this, this->recv_buffer, rcv_bytes);
+            if (this->tcp_ctrlr->client_msg_recvd) {
+                this->tcp_ctrlr->client_msg_recvd(this->tcp_ctrlr, this, this->recv_buffer, rcv_bytes);
+            }
         }
      }
 }
@@ -186,14 +195,14 @@ TcpClient::StopThread() {
     pthread_join(*(this->client_thread), NULL);
     free(this->client_thread);
     this->client_thread = NULL;
-    this->tcp_ctrlr->client_disconnected(this->tcp_ctrlr, this);
     this->Dereference();
 }
 
 void 
 TcpClient::trace() {
 
-    printf ("Tcp Client : [%s , %d]   ref count = %d\n", 
+    printf ("Tcp Client (%p): [%s , %d]   ref count = %d\n", 
+        this,
         network_convert_ip_n_to_p(htonl(this->ip_addr), 0),
         htons(this->port_no), this->ref_count);
 }

@@ -3,7 +3,7 @@ CFLAGS=-g
 TARGET:testapp.exe tcp_client.exe
 LIBS=-lpthread -lrt -L libtimer -ltimer -L CommandParser -lcli
 OBJS=TcpClient.o \
-	 TcpConn.o \
+	 		TcpConn.o \
 			TcpClientDbManager.o  \
 			TcpClientServiceManager.o \
 			TcpNewConnectionAcceptor.o \
@@ -13,6 +13,7 @@ OBJS=TcpClient.o \
 			TcpMsgFixedSizeDemarcar.o \
 			ByteCircularBuffer.o \
 			TcpMsgVariableSizeDemarcar.o \
+			TcpClientCleanupSvc.o \
 			TcpServerCli.o \
 			libtimer/libtimer.a	\
 			CommandParser/libcli.a \
@@ -61,6 +62,9 @@ ByteCircularBuffer.o:ByteCircularBuffer.cpp
 
 TcpMsgVariableSizeDemarcar.o:TcpMsgVariableSizeDemarcar.cpp
 	${CC} ${CFLAGS} -c TcpMsgVariableSizeDemarcar.cpp -o TcpMsgVariableSizeDemarcar.o
+
+TcpClientCleanupSvc.o:TcpClientCleanupSvc.cpp
+	${CC} ${CFLAGS} -c TcpClientCleanupSvc.cpp -o TcpClientCleanupSvc.o
 
 TcpServerCli.o:TcpServerCli.cpp
 	${CC} ${CFLAGS} -c TcpServerCli.cpp -o TcpServerCli.o

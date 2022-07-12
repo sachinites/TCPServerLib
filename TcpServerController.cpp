@@ -5,6 +5,8 @@
 #include "TcpNewConnectionAcceptor.h"
 #include "TcpClientDbManager.h"
 #include "TcpClientServiceManager.h"
+#include "TcpClientCleanupSvc.h"
+
 #include "bitsop.h"
 #include "network_utils.h"
 #include "TcpClient.h"
@@ -19,6 +21,8 @@ TcpServerController::TcpServerController(std::string ip_addr,  uint16_t port_no,
     this->tcp_new_conn_acc = new TcpNewConnectionAcceptor(this);
     this->tcp_client_db_mgr = new TcpClientDbManager(this);
     this->tcp_client_svc_mgr = new TcpClientServiceManager(this);
+    this->tcp_client_clean_svc = new TcpClientCleanupSvc(this);
+
     SET_BIT(this->state_flags, TCP_SERVER_INITIALIZED);
 }
 
@@ -27,6 +31,7 @@ TcpServerController::~TcpServerController() {
     assert(!this->tcp_new_conn_acc);
     assert(!this->tcp_client_db_mgr);
     assert(!this->tcp_client_svc_mgr);
+    assert(!this->tcp_client_clean_svc);
     printf ("TcpServerController %s Stopped\n", this->name.c_str());
 }
 
@@ -36,9 +41,11 @@ TcpServerController::Start() {
     assert(this->tcp_new_conn_acc);
     assert(this->tcp_client_db_mgr);
     assert(this->tcp_client_svc_mgr);
+    assert(this->tcp_client_clean_svc);
 
     this->tcp_new_conn_acc->StartTcpNewConnectionAcceptorThread();
     this->tcp_client_svc_mgr->StartTcpClientServiceManagerThread();
+    this->tcp_client_clean_svc->StartTcpServerClientCleanupThread();    
 
     SET_BIT(this->state_flags, TCP_SERVER_RUNNING);
 
@@ -61,6 +68,10 @@ TcpServerController::Stop() {
     this->tcp_client_db_mgr->Purge();
     delete this->tcp_client_db_mgr;
     this->tcp_client_db_mgr = NULL;
+
+    this->tcp_client_clean_svc->Stop();
+    delete this->tcp_client_clean_svc;
+    this->tcp_client_clean_svc = NULL;
 
     UNSET_BIT32(this->state_flags, TCP_SERVER_RUNNING);
     delete this;
@@ -170,6 +181,27 @@ TcpServerController::ProcessClientDelete(uint32_t ip_addr, uint16_t port_no) {
 }
 
 void
+TcpServerController::ProcessClientDelete(TcpClient *tcp_client) {
+
+     this->tcp_client_db_mgr->RemoveClientFromDB(tcp_client);
+    
+    if (!tcp_client->client_thread) {
+        this->tcp_client_svc_mgr->ClientFDStopListen(tcp_client);
+    }
+
+    if (tcp_client->client_thread) {
+        tcp_client->StopThread();
+    }
+
+#if 0
+    if (tcp_client->ka_thread) {
+        tcp_client->Stop_KA_Thread();
+        tcp_client->Dereference();
+    }
+#endif
+}
+
+void
 TcpServerController::RemoveClientFromDB(TcpClient *tcp_client) {
 
     this->tcp_client_db_mgr->RemoveClientFromDB(tcp_client);
@@ -231,4 +263,10 @@ TcpServerController::Display() {
     printf ("Listening on : [%s, %d]\n", network_convert_ip_n_to_p(this->ip_addr, 0), this->port_no);
 
     this->tcp_client_db_mgr->DisplayClientDb();
+}
+
+void 
+TcpServerController::EnqueueClientDeletionRequest(TcpClient *tcp_client) {
+
+    this->tcp_client_clean_svc->EnqueueClientDeletionRequest(tcp_client);
 }

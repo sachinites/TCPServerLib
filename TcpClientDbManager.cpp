@@ -114,7 +114,7 @@ TcpClientDbManager::DisplayClientDb() {
     std::list<TcpClient *>::iterator it;
     TcpClient *tcp_client;
 
-    pthread_rwlock_wrlock(&this->rwlock);
+    pthread_rwlock_rdlock(&this->rwlock);
 
     for (it = this->tcp_client_db.begin(); it !=  this->tcp_client_db.end(); ++it)
     {

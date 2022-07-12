@@ -3,10 +3,22 @@
 #include <stdint.h>
 #include <string>
 #include <list>
+#include <arpa/inet.h>
 #include "CommandParser/libcli.h"
 #include "CommandParser/cmdtlv.h"
 #include "TcpServerController.h"
+#include "TcpClient.h"
 #include "TcpCmdCodes.h"
+#include "network_utils.h"
+
+void client_connected_cbk(const TcpServerController *tcp_ctrlrl, const TcpClient *tcp_client);
+void client_disconnected_cbk(const TcpServerController *tcp_ctrlr, const TcpClient *tcp_client) ;
+void client_msg_recvd_cbk(const TcpServerController *tcp_ctrlrl, 
+                                      const TcpClient *tcp_client, 
+                                      unsigned char *msg,
+                                      uint16_t msg_size) ;
+void client_ka_pending_cbk(const TcpServerController *tcp_ctrlr, const TcpClient *tcp_client);
+
 
 std::list<TcpServerController *> tcp_server_lst;
 #define TCP_SERVER_DEFAULT_PORT_NO 40000
@@ -74,6 +86,13 @@ config_tcp_server_handler (param_t *param,
                 printf ("Error : Tcp Server Creation Failed\n");
                 return -1;
             }
+            
+            tcp_server->SetServerNotifCallbacks( 
+                client_connected_cbk,
+                client_disconnected_cbk,
+                client_msg_recvd_cbk,
+                client_ka_pending_cbk);
+
             tcp_server_lst.insert(tcp_server_lst.begin(), tcp_server);
             break;
         case TCP_SERVER_START:
@@ -254,4 +273,52 @@ tcp_build_cli() {
     tcp_build_config_cli_tree();
     tcp_build_run_cli_tree();
     tcp_build_show_cli_tree();
+}
+
+/* Default Callbacks, used when TCPServerLib is run via CLI instead of application */
+static void
+print_client(const TcpClient *client) {
+
+    printf ("[%s , %d]\n", network_convert_ip_n_to_p(htonl(client->ip_addr), 0),
+                htons(client->port_no));
+}
+
+static void
+print_server(const TcpServerController *tcp_server) {
+
+     printf ("[%s , %d]\n", network_convert_ip_n_to_p(htonl(tcp_server->ip_addr), 0),
+                htons(tcp_server->port_no));
+}
+
+
+void
+client_connected_cbk(const TcpServerController *tcp_ctrlrl, const TcpClient *tcp_client) {
+
+    print_server(tcp_ctrlrl);
+    printf ("Appln : client connected : ");
+    print_client(tcp_client);
+}
+
+void
+client_disconnected_cbk(const TcpServerController *tcp_ctrlr, const TcpClient *tcp_client) {
+
+    print_server(tcp_ctrlr);
+    printf ("Appln : client disconnected : ");
+    print_client(tcp_client);
+}
+
+void
+client_msg_recvd_cbk(const TcpServerController *tcp_ctrlrl, const TcpClient *tcp_client, 
+                               unsigned char *msg, uint16_t msg_size) {
+
+    print_server(tcp_ctrlrl);
+    printf ("Appln : client msg recvd = %dB : ", msg_size);
+    print_client(tcp_client);
+}
+
+void client_ka_pending_cbk(const TcpServerController *tcp_ctrlr, const TcpClient *tcp_client) {
+
+    print_server(tcp_ctrlr);
+    printf ("Appln : client KA Pending :  ");
+    print_client(tcp_client);
 }

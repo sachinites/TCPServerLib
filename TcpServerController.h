@@ -10,6 +10,7 @@
 class TcpNewConnectionAcceptor;
 class TcpClientServiceManager;
 class TcpClientDbManager;
+class  TcpClientCleanupSvc;
 class TcpClient;
 
 /* Server States */
@@ -26,6 +27,7 @@ private:
     TcpNewConnectionAcceptor *tcp_new_conn_acc;
     TcpClientDbManager *tcp_client_db_mgr;
     TcpClientServiceManager *tcp_client_svc_mgr;
+    TcpClientCleanupSvc *tcp_client_clean_svc;
     uint32_t state_flags;
 
 public:
@@ -62,6 +64,9 @@ public:
     void ProcessNewClient(TcpClient *tcp_client);
     /* Used by Application */
     void ProcessClientDelete(uint32_t ip_addr, uint16_t port_no);
+    void ProcessClientDelete(TcpClient *);
+    void EnqueueClientDeletionRequest(TcpClient *);
+
     /* Used by Multiplex Service */
     void RemoveClientFromDB(TcpClient *);
 

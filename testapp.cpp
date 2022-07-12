@@ -1,11 +1,11 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <memory.h>
+#include <arpa/inet.h>
 #include "CommandParser/libcli.h"
 #include "TcpServerController.h"
 #include "TcpClient.h"
 #include "network_utils.h"
-#include "arpa/inet.h"
 
 extern void tcp_build_cli();
 
