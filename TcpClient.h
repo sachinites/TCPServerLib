@@ -8,6 +8,21 @@
 
 #define MAX_CLIENT_BUFFER_SIZE 1024
 
+/* TCP Client States */
+#define TCP_CLIENT_STATE_CONNECT_IN_PROGRESS  1
+#define TCP_CLIENT_STATE_CONNECTED    2
+#define TCP_CLIENT_STATE_ESTABLISHED    4
+#define TCP_CLIENT_STATE_PASSIVE_OPENER    8
+#define TCP_CLIENT_STATE_ACTIVE_OPENER 16
+#define TCP_CLIENT_STATE_KA_BASED 32
+#define TCP_CLIENT_STATE_KA_EXPIRED   64
+#define TCP_CLIENT_STATE_MULTIPLEX_LISTEN 128
+#define TCP_CLIENT_STATE_THREADED 256
+#define TCP_CLIENT_STATE_NOT_CONNECTED  512
+#define TCP_CLIENT_CONNECTION_CLOSED    1024
+
+typedef uint32_t client_state_bit;
+
 class TcpClientServiceManager;
 class TcpServerController;
 class TcpMsgDemarcar;
@@ -18,10 +33,13 @@ class TcpClient {
         pthread_rwlock_t rwlock;
         void Abort();
         ~TcpClient();
-        
+        uint32_t state_flags;
+
     public :
         uint32_t ip_addr;
         uint16_t port_no;
+        uint32_t server_ip_addr;
+        uint16_t server_port_no;
         int comm_fd;
         int ref_count;
         unsigned char recv_buffer[MAX_CLIENT_BUFFER_SIZE];
@@ -45,6 +63,10 @@ class TcpClient {
         void Display();
         void SetTcpMsgDemarcar(TcpMsgDemarcar  *);
         void SetConnectionType(tcp_connection_type_t);
+        int TryClientConnect (bool) ;
+        void SetState(client_state_bit flag_bit);
+        void UnSetState(client_state_bit flag_bit);
+        bool IsStateSet (client_state_bit flag_bit);
 };
 
 #endif

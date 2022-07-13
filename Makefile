@@ -13,7 +13,6 @@ OBJS=TcpClient.o \
 			TcpMsgFixedSizeDemarcar.o \
 			ByteCircularBuffer.o \
 			TcpMsgVariableSizeDemarcar.o \
-			TcpClientCleanupSvc.o \
 			TcpServerCli.o \
 			libtimer/libtimer.a	\
 			CommandParser/libcli.a \
@@ -62,9 +61,6 @@ ByteCircularBuffer.o:ByteCircularBuffer.cpp
 
 TcpMsgVariableSizeDemarcar.o:TcpMsgVariableSizeDemarcar.cpp
 	${CC} ${CFLAGS} -c TcpMsgVariableSizeDemarcar.cpp -o TcpMsgVariableSizeDemarcar.o
-
-TcpClientCleanupSvc.o:TcpClientCleanupSvc.cpp
-	${CC} ${CFLAGS} -c TcpClientCleanupSvc.cpp -o TcpClientCleanupSvc.o
 
 TcpServerCli.o:TcpServerCli.cpp
 	${CC} ${CFLAGS} -c TcpServerCli.cpp -o TcpServerCli.o

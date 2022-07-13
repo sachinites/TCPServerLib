@@ -5,7 +5,6 @@
 #include "TcpNewConnectionAcceptor.h"
 #include "TcpClientDbManager.h"
 #include "TcpClientServiceManager.h"
-#include "TcpClientCleanupSvc.h"
 
 #include "bitsop.h"
 #include "network_utils.h"
@@ -21,7 +20,9 @@ TcpServerController::TcpServerController(std::string ip_addr,  uint16_t port_no,
     this->tcp_new_conn_acc = new TcpNewConnectionAcceptor(this);
     this->tcp_client_db_mgr = new TcpClientDbManager(this);
     this->tcp_client_svc_mgr = new TcpClientServiceManager(this);
-    this->tcp_client_clean_svc = new TcpClientCleanupSvc(this);
+
+    pthread_mutex_init (&this->msgq_mutex, NULL);
+    pthread_cond_init (&this->msgq_cv, NULL);
 
     SET_BIT(this->state_flags, TCP_SERVER_INITIALIZED);
 }
@@ -31,8 +32,17 @@ TcpServerController::~TcpServerController() {
     assert(!this->tcp_new_conn_acc);
     assert(!this->tcp_client_db_mgr);
     assert(!this->tcp_client_svc_mgr);
-    assert(!this->tcp_client_clean_svc);
     printf ("TcpServerController %s Stopped\n", this->name.c_str());
+}
+
+static void *
+tcp_server_msgq_thread_fn (void *arg) {
+
+    TcpServerController *tcp_ctrlr = (TcpServerController *)arg;
+    pthread_setcancelstate (PTHREAD_CANCEL_ENABLE, NULL);
+    pthread_setcanceltype (PTHREAD_CANCEL_DEFERRED, NULL);
+    tcp_ctrlr->MsgQProcessingThreadFn();
+    return NULL;
 }
 
 void
@@ -41,11 +51,12 @@ TcpServerController::Start() {
     assert(this->tcp_new_conn_acc);
     assert(this->tcp_client_db_mgr);
     assert(this->tcp_client_svc_mgr);
-    assert(this->tcp_client_clean_svc);
 
     this->tcp_new_conn_acc->StartTcpNewConnectionAcceptorThread();
     this->tcp_client_svc_mgr->StartTcpClientServiceManagerThread();
-    this->tcp_client_clean_svc->StartTcpServerClientCleanupThread();    
+
+    /* Initializing and Starting TCP Server Msg Q Thread */
+    pthread_create (&this->msgQ_op_thread, NULL, tcp_server_msgq_thread_fn, (void *)this);
 
     SET_BIT(this->state_flags, TCP_SERVER_RUNNING);
 
@@ -68,10 +79,6 @@ TcpServerController::Stop() {
     this->tcp_client_db_mgr->Purge();
     delete this->tcp_client_db_mgr;
     this->tcp_client_db_mgr = NULL;
-
-    this->tcp_client_clean_svc->Stop();
-    delete this->tcp_client_clean_svc;
-    this->tcp_client_clean_svc = NULL;
 
     UNSET_BIT32(this->state_flags, TCP_SERVER_RUNNING);
     delete this;
@@ -183,6 +190,8 @@ TcpServerController::ProcessClientDelete(uint32_t ip_addr, uint16_t port_no) {
 void
 TcpServerController::ProcessClientDelete(TcpClient *tcp_client) {
 
+    tcp_client->Reference();
+
      this->tcp_client_db_mgr->RemoveClientFromDB(tcp_client);
     
     if (!tcp_client->client_thread) {
@@ -193,6 +202,7 @@ TcpServerController::ProcessClientDelete(TcpClient *tcp_client) {
         tcp_client->StopThread();
     }
 
+    tcp_client->Dereference();
 #if 0
     if (tcp_client->ka_thread) {
         tcp_client->Stop_KA_Thread();
@@ -266,7 +276,118 @@ TcpServerController::Display() {
 }
 
 void 
-TcpServerController::EnqueueClientDeletionRequest(TcpClient *tcp_client) {
+TcpServerController::ProcessMsgQMsg(TcpServerMsg_t *msg) {
 
-    this->tcp_client_clean_svc->EnqueueClientDeletionRequest(tcp_client);
+    TcpClient *tcp_client;
+
+    tcp_client = (TcpClient *)msg->data;
+    msg->data = NULL;
+
+    if (msg->code & TCP_CLIENT_DELETE) {
+
+        this->ProcessClientDelete(tcp_client);
+        return;
+     }
+
+    if (msg->code & TCP_CLIENT_PROCESS_NEW) {
+
+        this->tcp_client_db_mgr->AddClientToDB(tcp_client);
+    }
+    
+    if (msg->code & TCP_CLIENT_MULTIPLEX_LISTEN) {
+
+            assert (!tcp_client->IsStateSet (TCP_CLIENT_STATE_MULTIPLEX_LISTEN));
+            this->tcp_client_svc_mgr->ClientFDStartListen(tcp_client);
+    }
+    
+    if (msg->code & TCP_CLIENT_MX_TO_MULTITHREADED) {
+
+        if (tcp_client->IsStateSet(TCP_CLIENT_STATE_THREADED)) return;
+
+        if (tcp_client->IsStateSet(TCP_CLIENT_STATE_MULTIPLEX_LISTEN)) {
+
+            this->tcp_client_svc_mgr->ClientFDStopListen(tcp_client);
+        }
+
+        this->CreateMultiThreadedClient(tcp_client);
+    }
+
+    if (msg->code & TCP_CLIENT_MULTITHREADED_TO_MX) {
+
+        if (tcp_client->IsStateSet (TCP_CLIENT_STATE_MULTIPLEX_LISTEN)) return;
+
+         if (tcp_client->IsStateSet(TCP_CLIENT_STATE_THREADED)) {
+
+            tcp_client->StopThread();
+         }
+
+        this->tcp_client_svc_mgr->ClientFDStartListen(tcp_client);
+    }
+
+    if (msg->code & TCP_CLIENT_CREATE_THREADED) {
+
+            assert (!tcp_client->IsStateSet (TCP_CLIENT_STATE_THREADED));
+            this->CreateMultiThreadedClient(tcp_client);
+    }
+}
+
+void 
+TcpServerController::MsgQProcessingThreadFn() {
+
+    TcpServerMsg_t *msg;
+
+    while (true) {
+
+        pthread_mutex_lock(&this->msgq_mutex);
+
+        while (this->msgQ.empty()) {
+            pthread_cond_wait(&this->msgq_cv, &this->msgq_mutex);
+        }
+
+        while (1) {
+            msg = this->msgQ.front();
+            if (!msg) break;
+            this->msgQ.pop_front();
+            this->ProcessMsgQMsg(msg);
+            if (msg->zero_sema) {
+                sem_post(msg->zero_sema);
+            }
+            free(msg);
+        }
+
+        pthread_mutex_unlock(&this->msgq_mutex);
+    }
+}
+
+void 
+TcpServerController::EnqueMsg (tcp_server_msg_code_t code, void *data, bool block_me) {
+
+        sem_t sem;
+        TcpServerMsg_t *msg = (TcpServerMsg_t *)calloc (1, sizeof (TcpServerMsg_t));
+        msg->code = code;
+        msg->data = data;
+
+        if (block_me) {
+            sem_init (&sem, 0, 0);
+            msg->zero_sema = &sem;
+        }
+        else {
+            msg->zero_sema = NULL;
+        }
+        
+        pthread_mutex_lock (&this->msgq_mutex);
+
+        if (block_me) {
+            this->msgQ.push_front(msg);
+        } 
+        else {
+            this->msgQ.push_back(msg);
+        }
+        pthread_cond_signal (&this->msgq_cv);
+        pthread_mutex_unlock (&this->msgq_mutex);
+
+        if (block_me) {
+            sem_wait(&sem);
+            sem_destroy(&sem);
+        }
 }

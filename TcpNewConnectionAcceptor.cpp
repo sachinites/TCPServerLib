@@ -14,6 +14,7 @@
 #include "TcpClientDbManager.h"
 #include "TcpClient.h"
 #include "network_utils.h"
+#include "bitsop.h"
 
 TcpNewConnectionAcceptor::TcpNewConnectionAcceptor(TcpServerController *TcpServerController) {
 
@@ -43,6 +44,7 @@ TcpNewConnectionAcceptor::StartTcpNewConnectionAcceptorThreadInternal() {
     int opt = 1;
     bool accept_new_conn;
     bool create_multi_threaded_client;
+    tcp_server_msg_code_t ctrlr_code = (tcp_server_msg_code_t)0;
     struct sockaddr_in server_addr;
     server_addr.sin_family      = AF_INET;
     server_addr.sin_port        = htons(this->tcp_ctrlr->port_no);
@@ -85,7 +87,7 @@ TcpNewConnectionAcceptor::StartTcpNewConnectionAcceptorThreadInternal() {
 
         pthread_testcancel();
         comm_socket_fd =  accept (this->accept_fd,
-                                                        (struct sockaddr *)&client_addr, &addr_len);
+                                                     (struct sockaddr *)&client_addr, &addr_len);
 
         if (comm_socket_fd < 0) {
             printf ("Error in Accepting New Connections\n");
@@ -107,6 +109,12 @@ TcpNewConnectionAcceptor::StartTcpNewConnectionAcceptorThreadInternal() {
         tcp_client->ip_addr = client_addr.sin_addr.s_addr;
         tcp_client->port_no = client_addr.sin_port;
         tcp_client->tcp_ctrlr = this->tcp_ctrlr;
+        tcp_client->server_ip_addr = htonl(this->tcp_ctrlr->ip_addr);
+        tcp_client->server_port_no = htons(this->tcp_ctrlr->port_no);
+        tcp_client->UnSetState(TCP_CLIENT_STATE_NOT_CONNECTED);
+        tcp_client->SetState(TCP_CLIENT_STATE_CONNECTED | 
+                                          TCP_CLIENT_STATE_PASSIVE_OPENER);
+        tcp_client->SetConnectionType(tcp_conn_via_accept);
 
         if (this->tcp_ctrlr->client_connected) {
             this->tcp_ctrlr->client_connected(this->tcp_ctrlr, tcp_client);
@@ -117,10 +125,20 @@ TcpNewConnectionAcceptor::StartTcpNewConnectionAcceptorThreadInternal() {
         tcp_client->SetTcpMsgDemarcar(
             TcpMsgDemarcar::InstantiateTcpMsgDemarcar(
                 this->tcp_ctrlr->msgd_type, 8, 0, 0, 0, 0));
+       
+       if (IS_BIT_SET( this->tcp_ctrlr->GetStateFlags() ,
+                TCP_SERVER_CREATE_MULTI_THREADED_CLIENT)) {
 
-        tcp_client->SetConnectionType(tcp_conn_via_accept);
-        
-        this->tcp_ctrlr->ProcessNewClient (tcp_client);
+          ctrlr_code = TCP_CLIENT_CREATE_THREADED;
+      }   
+      else {
+
+        ctrlr_code = TCP_CLIENT_MULTIPLEX_LISTEN;
+      }
+
+        this->tcp_ctrlr->EnqueMsg(
+                (tcp_server_msg_code_t) (TCP_CLIENT_PROCESS_NEW | ctrlr_code),
+                tcp_client, false);
     }
 }
 

@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <string>
 #include <pthread.h>
+#include <semaphore.h>
 #include <list>
 #include "TcpMsgDemarcar.h"
 
@@ -11,6 +12,7 @@ class TcpNewConnectionAcceptor;
 class TcpClientServiceManager;
 class TcpClientDbManager;
 class  TcpClientCleanupSvc;
+class  TcpConnectorMgrSvc;
 class TcpClient;
 
 /* Server States */
@@ -21,14 +23,39 @@ class TcpClient;
 #define TCP_SERVER_CREATE_MULTI_THREADED_CLIENT (4)
 #define TCP_SERVER_STATE_MAX (5)
 
+typedef enum tcp_server_msg_code_ {
+
+    TCP_CLIENT_PROCESS_NEW = 1,
+    TCP_CLIENT_MULTIPLEX_LISTEN = 2,
+    TCP_CLIENT_DELETE = 4,
+    TCP_CLIENT_MX_TO_MULTITHREADED = 8,
+    TCP_CLIENT_MULTITHREADED_TO_MX = 16,
+    TCP_CLIENT_CREATE_THREADED = 32,
+    TCP_SERVER_OP_MAX
+} tcp_server_msg_code_t;
+
+typedef struct TcpServerMsg_ {
+ 
+    tcp_server_msg_code_t code;
+    void *data;
+    sem_t *zero_sema;
+} TcpServerMsg_t;
+
 class TcpServerController {
 
 private:
     TcpNewConnectionAcceptor *tcp_new_conn_acc;
     TcpClientDbManager *tcp_client_db_mgr;
     TcpClientServiceManager *tcp_client_svc_mgr;
-    TcpClientCleanupSvc *tcp_client_clean_svc;
+    TcpConnectorMgrSvc *tcp_connector_svc;
     uint32_t state_flags;
+
+    /* Server Msg Q */
+    std::list<TcpServerMsg_t *> msgQ;
+    pthread_mutex_t msgq_mutex;
+    pthread_cond_t msgq_cv;
+    pthread_t msgQ_op_thread;
+    void ProcessMsgQMsg(TcpServerMsg_t *msg);
 
 public:
     /* State Variables */
@@ -65,7 +92,6 @@ public:
     /* Used by Application */
     void ProcessClientDelete(uint32_t ip_addr, uint16_t port_no);
     void ProcessClientDelete(TcpClient *);
-    void EnqueueClientDeletionRequest(TcpClient *);
 
     /* Used by Multiplex Service */
     void RemoveClientFromDB(TcpClient *);
@@ -81,6 +107,8 @@ public:
 
     /* Print the Tcp Server Details */
     void Display();
+    void MsgQProcessingThreadFn();
+    void EnqueMsg (tcp_server_msg_code_t code, void *data, bool block_me);
 };
 
 
