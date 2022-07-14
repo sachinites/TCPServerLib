@@ -134,9 +134,12 @@ TcpClientServiceManager::StartTcpClientServiceManagerThreadInternal2() {
                     this->tcp_ctrlr->client_disconnected(this->tcp_ctrlr, tcp_client);
                     /* Remove FD from fd_set otherwise, select will go in infinite loop*/
                     FD_CLR(tcp_client->comm_fd, &this->backup_fd_set);
+                    tcp_client->Reference();
                     this->RemoveClientFromDB(tcp_client);
+                    tcp_client->UnSetState (TCP_CLIENT_STATE_MULTIPLEX_LISTEN);
                     this->max_fd = this->GetMaxFd();
                     this->tcp_ctrlr->EnqueMsg(CTRLR_ACTION_TCP_CLIENT_DELETE, (void *)this, false);
+                    tcp_client->Dereference();
                 }
                 else {
                     /* If client has a TcpMsgDemarcar, then push the data to Demarcar, else notify the application straightaway */
@@ -206,9 +209,12 @@ TcpClientServiceManager::StartTcpClientServiceManagerThreadInternal() {
                     this->tcp_ctrlr->client_disconnected(this->tcp_ctrlr, tcp_client);
                     /* Remove FD from fd_set otherwise, select will go in infinite loop*/
                     FD_CLR(tcp_client->comm_fd, &this->backup_fd_set);
+                    tcp_client->Reference();
                     this->RemoveClientFromDB(tcp_client);
+                    tcp_client->UnSetState (TCP_CLIENT_STATE_MULTIPLEX_LISTEN);
                     this->max_fd = this->GetMaxFd();
-                    this->tcp_ctrlr->RemoveClientFromDB(tcp_client);
+                    this->tcp_ctrlr->EnqueMsg(CTRLR_ACTION_TCP_CLIENT_DELETE, (void *)this, false);
+                    tcp_client->Dereference();
                 }
                 else {
                     /* If client has a TcpMsgDemarcar, then push the data to Demarcar, else notify the application straightaway */
@@ -289,7 +295,7 @@ TcpClientServiceManager::ClientFDStartListen2(TcpClient *tcp_client) {
 
     assert(!this->LookUpClientDB(tcp_client->ip_addr, tcp_client->port_no));
     this->AddClientToDB(tcp_client);
-
+    tcp_client->SetState (TCP_CLIENT_STATE_MULTIPLEX_LISTEN);
     /* Now Update FDs */
     if (this->max_fd < tcp_client->comm_fd) {
         this->max_fd = tcp_client->comm_fd;
@@ -307,7 +313,7 @@ TcpClientServiceManager::ClientFDStartListen(TcpClient *tcp_client) {
 
     assert(!this->LookUpClientDB(tcp_client->ip_addr, tcp_client->port_no));
     this->AddClientToDB(tcp_client);
-  
+    tcp_client->SetState (TCP_CLIENT_STATE_MULTIPLEX_LISTEN);
     this->StartTcpClientServiceManagerThread();
 }
 
@@ -329,7 +335,7 @@ TcpClientServiceManager::ClientFDStopListen(uint32_t ip_addr, uint16_t port_no) 
     }
 
     this->RemoveClientFromDB(tcp_client);
-
+    tcp_client->UnSetState (TCP_CLIENT_STATE_MULTIPLEX_LISTEN);
     /* Now Update FDs */
     max_fd = GetMaxFd();
 
@@ -350,6 +356,7 @@ TcpClientServiceManager::ClientFDStopListen(TcpClient *tcp_client) {
         this->LookUpClientDB(tcp_client->ip_addr, tcp_client->port_no));
     
     this->RemoveClientFromDB(tcp_client);
+    tcp_client->UnSetState (TCP_CLIENT_STATE_MULTIPLEX_LISTEN);
 
     /* Now Update FDs */
     max_fd = GetMaxFd();
@@ -453,6 +460,7 @@ TcpClientServiceManager::Purge() {
         next_tcp_client = *(++it);
 
         this->tcp_client_db.remove(tcp_client);
+        tcp_client->UnSetState (TCP_CLIENT_STATE_MULTIPLEX_LISTEN);
         tcp_client->Dereference();
     }
 }

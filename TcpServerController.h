@@ -11,7 +11,6 @@
 class TcpNewConnectionAcceptor;
 class TcpClientServiceManager;
 class TcpClientDbManager;
-class  TcpConnectorMgrSvc;
 class TcpClient;
 
 /* Server States */
@@ -48,8 +47,11 @@ private:
     TcpNewConnectionAcceptor *tcp_new_conn_acc;
     TcpClientDbManager *tcp_client_db_mgr;
     TcpClientServiceManager *tcp_client_svc_mgr;
-    TcpConnectorMgrSvc *tcp_connector_svc;
     uint32_t state_flags;
+
+    pthread_rwlock_t connect_db_rwlock;
+    std::list<TcpClient *> establishedClient;
+    std::list<TcpClient *> connectpendingClients;
 
     /* Server Msg Q */
     std::list<TcpServerMsg_t *> msgQ;

@@ -146,7 +146,13 @@ config_tcp_server_handler (param_t *param,
                 printf("Error : Tcp Server do not Exist\n");
                 return -1;
             }
-            tcp_server->CreateActiveClient(network_covert_ip_p_to_n(remote_ip_addr), remote_port);
+            switch(enable_or_disable) {
+                case CONFIG_ENABLE:
+                    tcp_server->CreateActiveClient(network_covert_ip_p_to_n(remote_ip_addr), remote_port);
+                    break;
+                case CONFIG_DISABLE:
+                    break;
+            }
             break;
         default:
             ;

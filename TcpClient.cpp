@@ -189,6 +189,7 @@ TcpClient::StartThread() {
     pthread_attr_init(&attr);
 
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+    this->SetState (TCP_CLIENT_STATE_THREADED);
     pthread_create(this->client_thread, &attr, client_listening_thread, (void *)this);
     sem_wait(&this->wait_for_thread_operation_to_complete);
 }
@@ -201,6 +202,7 @@ TcpClient::StopThread() {
     pthread_join(*(this->client_thread), NULL);
     free(this->client_thread);
     this->client_thread = NULL;
+    this->UnSetState (TCP_CLIENT_STATE_THREADED);
     this->Dereference();
 }
 

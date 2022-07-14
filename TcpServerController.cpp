@@ -5,8 +5,6 @@
 #include "TcpNewConnectionAcceptor.h"
 #include "TcpClientDbManager.h"
 #include "TcpClientServiceManager.h"
-#include "TcpConnectorService.h"
-
 #include "bitsop.h"
 #include "network_utils.h"
 #include "TcpClient.h"
@@ -21,11 +19,10 @@ TcpServerController::TcpServerController(std::string ip_addr,  uint16_t port_no,
     this->tcp_new_conn_acc = new TcpNewConnectionAcceptor(this);
     this->tcp_client_db_mgr = new TcpClientDbManager(this);
     this->tcp_client_svc_mgr = new TcpClientServiceManager(this);
-    this->tcp_connector_svc = new TcpConnectorMgrSvc(this);
 
     pthread_mutex_init (&this->msgq_mutex, NULL);
     pthread_cond_init (&this->msgq_cv, NULL);
-
+    pthread_rwlock_init(&this->connect_db_rwlock, NULL);
     SET_BIT(this->state_flags, TCP_SERVER_INITIALIZED);
 }
 
@@ -34,7 +31,6 @@ TcpServerController::~TcpServerController() {
     assert(!this->tcp_new_conn_acc);
     assert(!this->tcp_client_db_mgr);
     assert(!this->tcp_client_svc_mgr);
-    assert(!this->tcp_connector_svc);
     printf ("TcpServerController %s Stopped\n", this->name.c_str());
 }
 
@@ -57,7 +53,6 @@ TcpServerController::Start() {
 
     this->tcp_new_conn_acc->StartTcpNewConnectionAcceptorThread();
     this->tcp_client_svc_mgr->StartTcpClientServiceManagerThread();
-    this->tcp_connector_svc->StartConnectorMgrServiceThread();
 
     /* Initializing and Starting TCP Server Msg Q Thread */
     pthread_create (&this->msgQ_op_thread, NULL, tcp_server_msgq_thread_fn, (void *)this);
@@ -76,9 +71,6 @@ TcpServerController::Stop() {
 
     this->tcp_client_svc_mgr->Stop();
     this->tcp_client_svc_mgr = NULL;
-
-    this->tcp_connector_svc->Stop();
-    this->tcp_connector_svc = NULL;
 
     /* Stopping the above two services first ensures that
         now no thread is alive which could add tcpclient back into
@@ -212,9 +204,18 @@ TcpServerController::ProcessClientDelete(TcpClient *tcp_client) {
     }
 
     if (tcp_client->IsStateSet (TCP_CLIENT_STATE_ACTIVE_OPENER)) {
-
-        this->tcp_connector_svc->EnqueueProcessRequest (CONNECTOR_SVC_CLIENT_DELETE, 
-            (void *)tcp_client, false);
+        pthread_rwlock_wrlock (&this->connect_db_rwlock);
+        if (tcp_client->IsStateSet(TCP_CLIENT_STATE_CONNECTED))
+        {
+            this->establishedClient.remove(tcp_client);
+            tcp_client->Dereference();
+        }
+        else
+        {
+            this->connectpendingClients.remove(tcp_client);
+            tcp_client->Dereference();
+        }
+        pthread_rwlock_unlock (&this->connect_db_rwlock);
     }
 
     tcp_client->Dereference();
@@ -356,10 +357,11 @@ TcpServerController::ProcessMsgQMsg(TcpServerMsg_t *msg) {
         assert (!tcp_client->IsStateSet (TCP_CLIENT_STATE_MULTIPLEX_LISTEN));
         assert (!tcp_client->IsStateSet (TCP_CLIENT_STATE_THREADED));
         assert (!tcp_client->IsStateSet (TCP_CLIENT_CONNECTION_CLOSED));
-        tcp_client->tcp_ctrlr->tcp_connector_svc->EnqueueProcessRequest (
-                        CONNECTOR_SVC_CLIENT_CONNECT_SUCCESS,
-                        (void *)tcp_client, false);
-        
+        pthread_rwlock_wrlock (&this->connect_db_rwlock);
+        this->connectpendingClients.remove(tcp_client);
+        this->establishedClient.push_back(tcp_client);
+        pthread_rwlock_unlock (&this->connect_db_rwlock);
+        this->CreateMultiThreadedClient(tcp_client);
     }
 }
 
@@ -377,8 +379,8 @@ TcpServerController::MsgQProcessingThreadFn() {
         }
 
         while (1) {
+            if (this->msgQ.empty()) break;
             msg = this->msgQ.front();
-            if (!msg) break;
             this->msgQ.pop_front();
             this->ProcessMsgQMsg(msg);
             if (msg->zero_sema) {
@@ -437,6 +439,17 @@ TcpServerController::CreateActiveClient (uint32_t server_ip_addr, uint16_t serve
     tcp_client->SetTcpMsgDemarcar(NULL);
     tcp_client->SetState(TCP_CLIENT_STATE_ACTIVE_OPENER);
     tcp_client->conn.conn_type = tcp_conn_via_connect;
-    this->tcp_connector_svc->EnqueueProcessRequest(CONNECTOR_SVC_CLIENT_TRY_CONNECT,
-            (void *)tcp_client, false);
+    pthread_rwlock_wrlock (&this->connect_db_rwlock);
+    this->connectpendingClients.push_back(tcp_client);
+    pthread_rwlock_unlock (&this->connect_db_rwlock);
+    tcp_client->Reference();
+
+    if (tcp_client->TryClientConnect(true) == 0) {
+        pthread_rwlock_wrlock (&this->connect_db_rwlock);
+        this->connectpendingClients.remove(tcp_client);
+        this->establishedClient.push_back(tcp_client);
+        pthread_rwlock_unlock (&this->connect_db_rwlock);
+        assert (!tcp_client->IsStateSet (TCP_CLIENT_STATE_THREADED));
+        this->CreateMultiThreadedClient(tcp_client);
+    }
 }
