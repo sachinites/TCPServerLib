@@ -352,6 +352,7 @@ client_msg_recvd_cbk(const TcpServerController *tcp_ctrlrl, const TcpClient *tcp
     print_server(tcp_ctrlrl);
     printf ("Appln : client msg recvd = %dB : ", msg_size);
     print_client(tcp_client);
+    printf ("msg = %s\n", msg);
 }
 
 void client_ka_pending_cbk(const TcpServerController *tcp_ctrlr, const TcpClient *tcp_client) {

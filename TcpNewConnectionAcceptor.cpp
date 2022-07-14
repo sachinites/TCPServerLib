@@ -123,7 +123,7 @@ TcpNewConnectionAcceptor::StartTcpNewConnectionAcceptorThreadInternal() {
 
         tcp_client->SetTcpMsgDemarcar(
             TcpMsgDemarcar::InstantiateTcpMsgDemarcar(
-                this->tcp_ctrlr->msgd_type, 8, 0, 0, 0, 0));
+                this->tcp_ctrlr->msgd_type, 27, 0, 0, 0, 0));
        
        if (IS_BIT_SET( this->tcp_ctrlr->GetStateFlags() ,
                 TCP_SERVER_CREATE_MULTI_THREADED_CLIENT)) {

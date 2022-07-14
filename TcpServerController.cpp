@@ -5,6 +5,7 @@
 #include "TcpNewConnectionAcceptor.h"
 #include "TcpClientDbManager.h"
 #include "TcpClientServiceManager.h"
+#include "TcpMsgDemarcar.h"
 #include "bitsop.h"
 #include "network_utils.h"
 #include "TcpClient.h"
@@ -19,7 +20,7 @@ TcpServerController::TcpServerController(std::string ip_addr,  uint16_t port_no,
     this->tcp_new_conn_acc = new TcpNewConnectionAcceptor(this);
     this->tcp_client_db_mgr = new TcpClientDbManager(this);
     this->tcp_client_svc_mgr = new TcpClientServiceManager(this);
-
+    this->msgd_type = TCP_DEMARCAR_FIXED_SIZE;
     pthread_mutex_init (&this->msgq_mutex, NULL);
     pthread_cond_init (&this->msgq_cv, NULL);
     pthread_rwlock_init(&this->connect_db_rwlock, NULL);

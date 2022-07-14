@@ -37,6 +37,7 @@ BCBWrite(ByteCircularBuffer_t *bcb, unsigned char *data, uint16_t data_size) {
     if (bcb->front < bcb->rear) {
         memcpy(BCB(bcb, bcb->front), data, data_size);
         bcb->front += data_size;
+        if (bcb->front == bcb->buffer_size) bcb->front = 0;
         bcb->current_size += data_size;
         return data_size;
     }
@@ -69,6 +70,7 @@ BCBRead(ByteCircularBuffer_t *bcb,
         memcpy(buffer, BCB(bcb, bcb->rear), data_size);
         if (remove_read_bytes) {
             bcb->rear += data_size;
+            if (bcb->rear == bcb->buffer_size) bcb->rear = 0;
             bcb->current_size -= data_size;
         }
         return data_size;
@@ -77,6 +79,7 @@ BCBRead(ByteCircularBuffer_t *bcb,
     uint16_t leading_space = bcb->buffer_size - bcb->rear;
 
     if (data_size <= leading_space) {
+
         memcpy(buffer, BCB(bcb, bcb->rear), data_size);
 
         if (remove_read_bytes) {

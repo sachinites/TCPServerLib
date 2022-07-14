@@ -28,6 +28,7 @@ TcpMsgFixedSizeDemarcar::IsBufferReadyToflush() {
 void
 TcpMsgFixedSizeDemarcar::Destroy() {
 
+    this->TcpMsgDemarcar::Destroy();
 }
 
 void
@@ -44,5 +45,7 @@ TcpMsgFixedSizeDemarcar::NotifyMsgToClient(TcpClient *tcp_client) {
 
         tcp_client->tcp_ctrlr->client_msg_recvd(tcp_client->tcp_ctrlr, 
                 tcp_client, this->TcpMsgDemarcar::buffer, bytes_read);
+        
+        if (!this->IsBufferReadyToflush()) break;;
     }
 }

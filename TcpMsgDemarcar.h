@@ -5,7 +5,7 @@
 
 #include <stdint.h>
 
-#define DEFAULT_CBC_SIZE  256
+#define DEFAULT_CBC_SIZE  (10240)
 
 typedef enum {
 
