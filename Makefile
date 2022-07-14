@@ -11,6 +11,7 @@ OBJS=TcpClient.o \
 			network_utils.o	\
 			TcpMsgDemarcar.o \
 			TcpMsgFixedSizeDemarcar.o \
+			TcpConnectorService.o \
 			ByteCircularBuffer.o \
 			TcpMsgVariableSizeDemarcar.o \
 			TcpServerCli.o \
@@ -61,6 +62,9 @@ ByteCircularBuffer.o:ByteCircularBuffer.cpp
 
 TcpMsgVariableSizeDemarcar.o:TcpMsgVariableSizeDemarcar.cpp
 	${CC} ${CFLAGS} -c TcpMsgVariableSizeDemarcar.cpp -o TcpMsgVariableSizeDemarcar.o
+
+TcpConnectorService.o:TcpConnectorService.cpp
+	${CC} ${CFLAGS} -c TcpConnectorService.cpp -o TcpConnectorService.o
 
 TcpServerCli.o:TcpServerCli.cpp
 	${CC} ${CFLAGS} -c TcpServerCli.cpp -o TcpServerCli.o

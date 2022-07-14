@@ -42,32 +42,21 @@ TcpConnectorMgrSvc::Stop() {
 
         assert (tcp_client->IsStateSet(TCP_CLIENT_STATE_CONNECT_IN_PROGRESS));
         assert (tcp_client->IsStateSet(TCP_CLIENT_STATE_ACTIVE_OPENER));
-        assert (tcp_client->IsStateSet(TCP_CLIENT_STATE_NOT_CONNECTED));
+        assert (!tcp_client->IsStateSet(TCP_CLIENT_STATE_CONNECTED));
         assert(tcp_client->client_thread);
 
         tcp_client->StopThread();
-        this->tcp_ctrlr->EnqueueClientDeletionRequest(tcp_client);
+        this->tcp_ctrlr->EnqueMsg (CTRLR_ACTION_TCP_CLIENT_DELETE, (void *)tcp_client, true);
         tcp_client->Dereference();
     }
 
-    while (!this->connectionInProgressClients.empty()) {
+    while (!this->establishedClient.empty()) {
 
-        tcp_client = this->connectionInProgressClients.front();
-        this->connectionInProgressClients.pop_front();
+        tcp_client = this->establishedClient.front();
+        this->establishedClient.pop_front();
         assert (tcp_client->IsStateSet(TCP_CLIENT_STATE_CONNECTED));
         assert (tcp_client->IsStateSet(TCP_CLIENT_STATE_ACTIVE_OPENER));
-        assert(!tcp_client->client_thread);
-        this->tcp_ctrlr->EnqueueClientDeletionRequest(tcp_client);
-        tcp_client->Dereference();
-    }
-
-    while (!this->connectionInProgressClients.empty()) {
-
-        tcp_client = this->connectionInProgressClients.front();
-        this->connectionInProgressClients.pop_front();
-        assert (tcp_client->IsStateSet(TCP_CLIENT_STATE_ESTABLISHED));
-        assert (tcp_client->IsStateSet(TCP_CLIENT_STATE_ACTIVE_OPENER));
-        this->tcp_ctrlr->EnqueueClientDeletionRequest(tcp_client);
+        this->tcp_ctrlr->EnqueMsg(CTRLR_ACTION_TCP_CLIENT_DELETE, tcp_client, false);
         tcp_client->Dereference();
     }
 
@@ -80,6 +69,7 @@ void
 TcpConnectorMgrSvc::ConnectorMgrServiceThreadInternal() {
 
     TcpClient *tcp_client;
+    sem_t *sem;
     TcpConnectorMgrSvcMsg_t *msg;
 
     while (true) {
@@ -93,21 +83,58 @@ TcpConnectorMgrSvc::ConnectorMgrServiceThreadInternal() {
 
         while (1) {
 
+            if (this->msgQ.empty()) break;
+
             msg = this->msgQ.front();
-            if (!msg) break;
+            this->msgQ.pop_front();
+            sem = msg->zero_sema;
+
             switch (msg->mgs_type) {
-                case CLIENT_TRY_CONNECT:
+            
+                case CONNECTOR_SVC_CLIENT_TRY_CONNECT:
                     tcp_client = (TcpClient *)msg->data;
-                    tcp_client->Dereference();
-                    TcpConnectorMgrSvc::TryClientConnect(tcp_client, true);
+                    this->connectpendingClients.push_back(tcp_client);
+                    tcp_client->Reference();
+
+                    if (tcp_client->TryClientConnect(true) == 0) {
+
+                        this->connectpendingClients.remove(tcp_client);
+                        
+                         this->establishedClient.push_back(tcp_client);
+                        
+                        this->tcp_ctrlr->EnqueMsg (CTRLR_ACTION_TCP_CLIENT_CREATE_THREADED,
+                        (void *)tcp_client, false);
+                    }
                     break;
-                case CLIENT_CONNECT_SUCCESS:
-                case CLIENT_DISCONNECTED:
-                case CLIENT_CONNECT_FAILED:
+
+                case CONNECTOR_SVC_CLIENT_CONNECT_SUCCESS:
+                    this->connectpendingClients.remove(tcp_client);
+                    this->establishedClient.push_back(tcp_client);
+                    this->tcp_ctrlr->EnqueMsg (CTRLR_ACTION_TCP_CLIENT_CREATE_THREADED,
+                        (void *)tcp_client, false);
+                        break;
+
+                case CONNECTOR_SVC_CLIENT_DISCONNECTED:
+                    break;
+                case CONNECTOR_SVC_CLIENT_CONNECT_FAILED:
+                    break;
+                case CONNECTOR_SVC_CLIENT_DELETE:
+                    if (tcp_client->IsStateSet (TCP_CLIENT_STATE_CONNECTED)) {
+                        this->establishedClient.remove(tcp_client);
+                        tcp_client->Dereference();
+                    }
+                    else {
+                        this->connectpendingClients.remove(tcp_client);
+                        tcp_client->Dereference();
+                    }
+                break;
                 default:
                     assert(0);
             }
             free(msg);
+            if (sem) {
+                sem_post(sem);
+            }
         }
         pthread_mutex_unlock(&this->mutex);
     }
@@ -134,25 +161,37 @@ TcpConnectorMgrSvc::StartConnectorMgrServiceThread() {
 
 void 
 TcpConnectorMgrSvc::EnqueueProcessRequest (
-                                    TcpConnectorSvcMsgRequestType msg_type, void *data) {
+                                    TcpConnectorSvcMsgRequestType msg_type, void *data, bool block_me) {
 
+    sem_t sem;
     TcpConnectorMgrSvcMsg_t *msg;
 
     switch(msg_type) {
-        case CLIENT_TRY_CONNECT:
+        case CONNECTOR_SVC_CLIENT_TRY_CONNECT:
+        case CONNECTOR_SVC_CLIENT_CONNECT_SUCCESS:
+        case CONNECTOR_SVC_CLIENT_DISCONNECTED:
+        case CONNECTOR_SVC_CLIENT_CONNECT_FAILED:
+        case CONNECTOR_SVC_CLIENT_DELETE:
             msg = (TcpConnectorMgrSvcMsg_t *)calloc (1, sizeof(TcpConnectorMgrSvcMsg_t));
             msg->mgs_type = msg_type;
             msg->data = data;
+            
+            if (block_me) {
+                sem_init(&sem, 0, 0);
+                msg->zero_sema = &sem;
+            }
+            else {
+                msg->zero_sema = NULL;
+            }
+
             pthread_mutex_lock(&this->mutex);
             this->msgQ.push_back(msg);
             pthread_cond_signal(&this->cv);
             pthread_mutex_unlock(&this->mutex);
-            break;
-        case CLIENT_CONNECT_SUCCESS:
-            break;
-        case CLIENT_DISCONNECTED:
-            break;
-        case CLIENT_CONNECT_FAILED:
+            if (block_me) {
+                sem_wait(&sem);
+                sem_destroy(&sem);                
+            }
             break;
         default:
             assert(0);

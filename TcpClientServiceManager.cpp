@@ -136,7 +136,7 @@ TcpClientServiceManager::StartTcpClientServiceManagerThreadInternal2() {
                     FD_CLR(tcp_client->comm_fd, &this->backup_fd_set);
                     this->RemoveClientFromDB(tcp_client);
                     this->max_fd = this->GetMaxFd();
-                    this->tcp_ctrlr->EnqueMsg(TCP_CLIENT_DELETE, (void *)this, false);
+                    this->tcp_ctrlr->EnqueMsg(CTRLR_ACTION_TCP_CLIENT_DELETE, (void *)this, false);
                 }
                 else {
                     /* If client has a TcpMsgDemarcar, then push the data to Demarcar, else notify the application straightaway */

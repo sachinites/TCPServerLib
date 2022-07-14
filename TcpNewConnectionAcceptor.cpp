@@ -111,7 +111,6 @@ TcpNewConnectionAcceptor::StartTcpNewConnectionAcceptorThreadInternal() {
         tcp_client->tcp_ctrlr = this->tcp_ctrlr;
         tcp_client->server_ip_addr = htonl(this->tcp_ctrlr->ip_addr);
         tcp_client->server_port_no = htons(this->tcp_ctrlr->port_no);
-        tcp_client->UnSetState(TCP_CLIENT_STATE_NOT_CONNECTED);
         tcp_client->SetState(TCP_CLIENT_STATE_CONNECTED | 
                                           TCP_CLIENT_STATE_PASSIVE_OPENER);
         tcp_client->SetConnectionType(tcp_conn_via_accept);
@@ -129,15 +128,15 @@ TcpNewConnectionAcceptor::StartTcpNewConnectionAcceptorThreadInternal() {
        if (IS_BIT_SET( this->tcp_ctrlr->GetStateFlags() ,
                 TCP_SERVER_CREATE_MULTI_THREADED_CLIENT)) {
 
-          ctrlr_code = TCP_CLIENT_CREATE_THREADED;
+          ctrlr_code = CTRLR_ACTION_TCP_CLIENT_CREATE_THREADED;
       }   
       else {
 
-        ctrlr_code = TCP_CLIENT_MULTIPLEX_LISTEN;
+        ctrlr_code = CTRLR_ACTION_TCP_CLIENT_MULTIPLEX_LISTEN;
       }
 
         this->tcp_ctrlr->EnqueMsg(
-                (tcp_server_msg_code_t) (TCP_CLIENT_PROCESS_NEW | ctrlr_code),
+                (tcp_server_msg_code_t) (CTRLR_ACTION_TCP_CLIENT_PROCESS_NEW | ctrlr_code),
                 tcp_client, false);
     }
 }

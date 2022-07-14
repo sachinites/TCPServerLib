@@ -18,6 +18,7 @@
 #define TCP_SERVER_STOP_LISTENING_CLIENTS   14  // config tcp-server <name> [no] client listen
 #define TCP_SERVER_STOP_LISTENING_ONE_CLIENT   15  // config tcp-server <name> [no] client <ip-addr> listen
 #define TCP_SERVER_START    16 // config tcp-server <name> start
+#define TCP_SERVER_CONNECT_REMOTE   17 // config tcp-server s1 connect <ip-addr> <port no>
 
 /* TCP Client Operations */
 #define TCP_CLIENT_CREATE   1 // config tcp-client <name> [<src-ip-addr>] [<src-port-no>]

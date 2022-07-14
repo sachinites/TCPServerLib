@@ -11,7 +11,6 @@
 class TcpNewConnectionAcceptor;
 class TcpClientServiceManager;
 class TcpClientDbManager;
-class  TcpClientCleanupSvc;
 class  TcpConnectorMgrSvc;
 class TcpClient;
 
@@ -25,13 +24,15 @@ class TcpClient;
 
 typedef enum tcp_server_msg_code_ {
 
-    TCP_CLIENT_PROCESS_NEW = 1,
-    TCP_CLIENT_MULTIPLEX_LISTEN = 2,
-    TCP_CLIENT_DELETE = 4,
-    TCP_CLIENT_MX_TO_MULTITHREADED = 8,
-    TCP_CLIENT_MULTITHREADED_TO_MX = 16,
-    TCP_CLIENT_CREATE_THREADED = 32,
-    TCP_SERVER_OP_MAX
+    CTRLR_ACTION_TCP_CLIENT_PROCESS_NEW = 1,
+    CTRLR_ACTION_TCP_CLIENT_MULTIPLEX_LISTEN = 2,
+    CTRLR_ACTION_TCP_CLIENT_DELETE = 4,
+    CTRLR_ACTION_TCP_CLIENT_MX_TO_MULTITHREADED = 8,
+    CTRLR_ACTION_TCP_CLIENT_MULTITHREADED_TO_MX = 16,
+    CTRLR_ACTION_TCP_CLIENT_CREATE_THREADED = 32,
+    CTRLR_ACTION_TCP_CLIENT_ACTIVE_CONNECT_SUCCESS = 64,
+    CTRLR_ACTION_TCP_CLIENT_RECONNECT = 128,
+    CTRLR_ACTION_TCP_SERVER_OP_MAX = 256
 } tcp_server_msg_code_t;
 
 typedef struct TcpServerMsg_ {
@@ -109,6 +110,7 @@ public:
     void Display();
     void MsgQProcessingThreadFn();
     void EnqueMsg (tcp_server_msg_code_t code, void *data, bool block_me);
+    void CreateActiveClient (uint32_t server_ip_addr, uint16_t server_port_no);
 };
 
 

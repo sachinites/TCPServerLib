@@ -11,14 +11,12 @@
 /* TCP Client States */
 #define TCP_CLIENT_STATE_CONNECT_IN_PROGRESS  1
 #define TCP_CLIENT_STATE_CONNECTED    2
-#define TCP_CLIENT_STATE_ESTABLISHED    4
 #define TCP_CLIENT_STATE_PASSIVE_OPENER    8
 #define TCP_CLIENT_STATE_ACTIVE_OPENER 16
 #define TCP_CLIENT_STATE_KA_BASED 32
 #define TCP_CLIENT_STATE_KA_EXPIRED   64
 #define TCP_CLIENT_STATE_MULTIPLEX_LISTEN 128
 #define TCP_CLIENT_STATE_THREADED 256
-#define TCP_CLIENT_STATE_NOT_CONNECTED  512
 #define TCP_CLIENT_CONNECTION_CLOSED    1024
 
 typedef uint32_t client_state_bit;
@@ -44,6 +42,7 @@ class TcpClient {
         int ref_count;
         unsigned char recv_buffer[MAX_CLIENT_BUFFER_SIZE];
         pthread_t *client_thread;
+        pthread_t *active_connect_thread;
         TcpServerController *tcp_ctrlr;
         sem_t wait_for_thread_operation_to_complete;
         TcpMsgDemarcar *msgd;

@@ -28,7 +28,6 @@ TcpClient::TcpClient() {
     this->port_no = 0;
     sem_init(&this->wait_for_thread_operation_to_complete, 0, 0);
     this->ref_count = 0;
-    this->SetState(TCP_CLIENT_STATE_NOT_CONNECTED);
 }
 
 TcpClient::TcpClient(TcpClient *tcp_client) {
@@ -141,7 +140,13 @@ TcpClient::ClientThreadFunction() {
             if (this->tcp_ctrlr->client_disconnected) {
                 this->tcp_ctrlr->client_disconnected(this->tcp_ctrlr, this);
             }
-            this->tcp_ctrlr->EnqueMsg(TCP_CLIENT_DELETE, (void *)this, true);
+
+            if (this->IsStateSet (TCP_CLIENT_STATE_ACTIVE_OPENER)) {
+                 this->tcp_ctrlr->EnqueMsg(CTRLR_ACTION_TCP_CLIENT_RECONNECT, (void *)this, true);
+            }
+            else {
+                this->tcp_ctrlr->EnqueMsg(CTRLR_ACTION_TCP_CLIENT_DELETE, (void *)this, true);
+            }
             assert(0);
         }
 
@@ -247,23 +252,39 @@ TcpClient::IsStateSet(client_state_bit flag_bit) {
 static void *
 connect_retry_fn(void *arg) {
 
+    struct sockaddr_in dest;
     TcpClient *tcp_client = (TcpClient *)arg;
     
+    dest.sin_family = AF_INET;
+    dest.sin_port = htons(tcp_client->server_port_no);
+    dest.sin_addr.s_addr = htonl(tcp_client->server_ip_addr);
+
     while (1) {
         
         sleep(10);
         
-        if (tcp_client->TryClientConnect(false) != 0) {
-            continue;
-        }
-        break;
+        printf ("Trying again ....\n");
+
+         int rc = connect(tcp_client->comm_fd, (struct sockaddr *)&dest, sizeof(struct sockaddr));
+
+         if (!rc) {
+
+             tcp_client->UnSetState(TCP_CLIENT_STATE_CONNECT_IN_PROGRESS);
+             tcp_client->SetState(TCP_CLIENT_STATE_CONNECTED);
+             if (tcp_client->tcp_ctrlr->client_connected)
+             {
+                 tcp_client->tcp_ctrlr->client_connected(tcp_client->tcp_ctrlr, tcp_client);
+             }
+
+             tcp_client->tcp_ctrlr->EnqueMsg(CTRLR_ACTION_TCP_CLIENT_ACTIVE_CONNECT_SUCCESS,
+                                             (void *)tcp_client, false);
+             free(tcp_client->active_connect_thread);
+             tcp_client->active_connect_thread = NULL;
+             tcp_client->Dereference();
+             pthread_exit(0);
+         }
+        continue;
     }
-
-    
-    tcp_client->UnSetState(TCP_CLIENT_STATE_CONNECT_IN_PROGRESS);
-    tcp_client->SetState(TCP_CLIENT_STATE_CONNECTED);
-
-    tcp_client->Reference();
     return NULL;
 }
 
@@ -273,7 +294,7 @@ TcpClient::TryClientConnect (bool try_again) {
     struct sockaddr_in dest;
     TcpClient *tcp_client = this;
 
-    assert (!tcp_client->client_thread);
+    assert (!tcp_client->active_connect_thread);
     assert (tcp_client->ip_addr);
     assert (!tcp_client->port_no);
     assert (tcp_client->server_ip_addr);
@@ -293,13 +314,16 @@ TcpClient::TryClientConnect (bool try_again) {
     if (!rc) {
         tcp_client->UnSetState(TCP_CLIENT_STATE_CONNECT_IN_PROGRESS);
         tcp_client->SetState(TCP_CLIENT_STATE_CONNECTED);
+        if (tcp_client->tcp_ctrlr->client_connected) {
+            tcp_client->tcp_ctrlr->client_connected(tcp_client->tcp_ctrlr, tcp_client);
+        }
         return 0;
     }
 
     if (!try_again) return (-1);
 
-    tcp_client->client_thread = (pthread_t *)calloc (1, sizeof(pthread_t));
+    tcp_client->active_connect_thread = (pthread_t *)calloc (1, sizeof(pthread_t));
     tcp_client->Reference();
-    pthread_create (tcp_client->client_thread, NULL, connect_retry_fn, (void *)tcp_client);
+    pthread_create (tcp_client->active_connect_thread, NULL, connect_retry_fn, (void *)tcp_client);
     return 1;
 }

@@ -5,6 +5,7 @@
 #include "TcpNewConnectionAcceptor.h"
 #include "TcpClientDbManager.h"
 #include "TcpClientServiceManager.h"
+#include "TcpConnectorService.h"
 
 #include "bitsop.h"
 #include "network_utils.h"
@@ -20,6 +21,7 @@ TcpServerController::TcpServerController(std::string ip_addr,  uint16_t port_no,
     this->tcp_new_conn_acc = new TcpNewConnectionAcceptor(this);
     this->tcp_client_db_mgr = new TcpClientDbManager(this);
     this->tcp_client_svc_mgr = new TcpClientServiceManager(this);
+    this->tcp_connector_svc = new TcpConnectorMgrSvc(this);
 
     pthread_mutex_init (&this->msgq_mutex, NULL);
     pthread_cond_init (&this->msgq_cv, NULL);
@@ -32,6 +34,7 @@ TcpServerController::~TcpServerController() {
     assert(!this->tcp_new_conn_acc);
     assert(!this->tcp_client_db_mgr);
     assert(!this->tcp_client_svc_mgr);
+    assert(!this->tcp_connector_svc);
     printf ("TcpServerController %s Stopped\n", this->name.c_str());
 }
 
@@ -54,6 +57,7 @@ TcpServerController::Start() {
 
     this->tcp_new_conn_acc->StartTcpNewConnectionAcceptorThread();
     this->tcp_client_svc_mgr->StartTcpClientServiceManagerThread();
+    this->tcp_connector_svc->StartConnectorMgrServiceThread();
 
     /* Initializing and Starting TCP Server Msg Q Thread */
     pthread_create (&this->msgQ_op_thread, NULL, tcp_server_msgq_thread_fn, (void *)this);
@@ -72,6 +76,9 @@ TcpServerController::Stop() {
 
     this->tcp_client_svc_mgr->Stop();
     this->tcp_client_svc_mgr = NULL;
+
+    this->tcp_connector_svc->Stop();
+    this->tcp_connector_svc = NULL;
 
     /* Stopping the above two services first ensures that
         now no thread is alive which could add tcpclient back into
@@ -192,9 +199,11 @@ TcpServerController::ProcessClientDelete(TcpClient *tcp_client) {
 
     tcp_client->Reference();
 
-     this->tcp_client_db_mgr->RemoveClientFromDB(tcp_client);
+    if (tcp_client->IsStateSet (TCP_CLIENT_STATE_PASSIVE_OPENER)) {
+        this->tcp_client_db_mgr->RemoveClientFromDB(tcp_client);
+    }
     
-    if (!tcp_client->client_thread) {
+    if (tcp_client->IsStateSet (TCP_CLIENT_STATE_MULTIPLEX_LISTEN)) {
         this->tcp_client_svc_mgr->ClientFDStopListen(tcp_client);
     }
 
@@ -202,13 +211,13 @@ TcpServerController::ProcessClientDelete(TcpClient *tcp_client) {
         tcp_client->StopThread();
     }
 
-    tcp_client->Dereference();
-#if 0
-    if (tcp_client->ka_thread) {
-        tcp_client->Stop_KA_Thread();
-        tcp_client->Dereference();
+    if (tcp_client->IsStateSet (TCP_CLIENT_STATE_ACTIVE_OPENER)) {
+
+        this->tcp_connector_svc->EnqueueProcessRequest (CONNECTOR_SVC_CLIENT_DELETE, 
+            (void *)tcp_client, false);
     }
-#endif
+
+    tcp_client->Dereference();
 }
 
 void
@@ -283,24 +292,32 @@ TcpServerController::ProcessMsgQMsg(TcpServerMsg_t *msg) {
     tcp_client = (TcpClient *)msg->data;
     msg->data = NULL;
 
-    if (msg->code & TCP_CLIENT_DELETE) {
+    if (msg->code & CTRLR_ACTION_TCP_CLIENT_DELETE) {
 
         this->ProcessClientDelete(tcp_client);
         return;
      }
 
-    if (msg->code & TCP_CLIENT_PROCESS_NEW) {
+     if (msg->code &  CTRLR_ACTION_TCP_CLIENT_RECONNECT) {
+
+        uint32_t server_ip_addr = tcp_client->server_ip_addr;
+        uint16_t server_port_no = tcp_client->server_port_no;
+        this->ProcessClientDelete(tcp_client);
+        this->CreateActiveClient(server_ip_addr, server_port_no);
+     }
+
+    if (msg->code & CTRLR_ACTION_TCP_CLIENT_PROCESS_NEW) {
 
         this->tcp_client_db_mgr->AddClientToDB(tcp_client);
     }
     
-    if (msg->code & TCP_CLIENT_MULTIPLEX_LISTEN) {
+    if (msg->code & CTRLR_ACTION_TCP_CLIENT_MULTIPLEX_LISTEN) {
 
             assert (!tcp_client->IsStateSet (TCP_CLIENT_STATE_MULTIPLEX_LISTEN));
             this->tcp_client_svc_mgr->ClientFDStartListen(tcp_client);
     }
     
-    if (msg->code & TCP_CLIENT_MX_TO_MULTITHREADED) {
+    if (msg->code & CTRLR_ACTION_TCP_CLIENT_MX_TO_MULTITHREADED) {
 
         if (tcp_client->IsStateSet(TCP_CLIENT_STATE_THREADED)) return;
 
@@ -312,7 +329,7 @@ TcpServerController::ProcessMsgQMsg(TcpServerMsg_t *msg) {
         this->CreateMultiThreadedClient(tcp_client);
     }
 
-    if (msg->code & TCP_CLIENT_MULTITHREADED_TO_MX) {
+    if (msg->code & CTRLR_ACTION_TCP_CLIENT_MULTITHREADED_TO_MX) {
 
         if (tcp_client->IsStateSet (TCP_CLIENT_STATE_MULTIPLEX_LISTEN)) return;
 
@@ -324,10 +341,25 @@ TcpServerController::ProcessMsgQMsg(TcpServerMsg_t *msg) {
         this->tcp_client_svc_mgr->ClientFDStartListen(tcp_client);
     }
 
-    if (msg->code & TCP_CLIENT_CREATE_THREADED) {
+    if (msg->code & CTRLR_ACTION_TCP_CLIENT_CREATE_THREADED) {
 
             assert (!tcp_client->IsStateSet (TCP_CLIENT_STATE_THREADED));
             this->CreateMultiThreadedClient(tcp_client);
+    }
+
+    if (msg->code & CTRLR_ACTION_TCP_CLIENT_ACTIVE_CONNECT_SUCCESS) {
+
+        assert (!tcp_client->IsStateSet (TCP_CLIENT_STATE_CONNECT_IN_PROGRESS));
+        assert (tcp_client->IsStateSet (TCP_CLIENT_STATE_CONNECTED));
+        assert (!tcp_client->IsStateSet (TCP_CLIENT_STATE_PASSIVE_OPENER));
+        assert (tcp_client->IsStateSet (TCP_CLIENT_STATE_ACTIVE_OPENER));
+        assert (!tcp_client->IsStateSet (TCP_CLIENT_STATE_MULTIPLEX_LISTEN));
+        assert (!tcp_client->IsStateSet (TCP_CLIENT_STATE_THREADED));
+        assert (!tcp_client->IsStateSet (TCP_CLIENT_CONNECTION_CLOSED));
+        tcp_client->tcp_ctrlr->tcp_connector_svc->EnqueueProcessRequest (
+                        CONNECTOR_SVC_CLIENT_CONNECT_SUCCESS,
+                        (void *)tcp_client, false);
+        
     }
 }
 
@@ -390,4 +422,21 @@ TcpServerController::EnqueMsg (tcp_server_msg_code_t code, void *data, bool bloc
             sem_wait(&sem);
             sem_destroy(&sem);
         }
+}
+
+void 
+TcpServerController::CreateActiveClient (uint32_t server_ip_addr, uint16_t server_port_no) {
+
+    TcpClient *tcp_client = new TcpClient ();
+    tcp_client->server_ip_addr = server_ip_addr;
+    tcp_client->server_port_no = server_port_no;
+    tcp_client->ip_addr = this->ip_addr;
+    tcp_client->port_no = 0; // Dynamically allocated
+    tcp_client->tcp_ctrlr = this;
+    sem_init(&tcp_client->wait_for_thread_operation_to_complete, 0, 0);
+    tcp_client->SetTcpMsgDemarcar(NULL);
+    tcp_client->SetState(TCP_CLIENT_STATE_ACTIVE_OPENER);
+    tcp_client->conn.conn_type = tcp_conn_via_connect;
+    this->tcp_connector_svc->EnqueueProcessRequest(CONNECTOR_SVC_CLIENT_TRY_CONNECT,
+            (void *)tcp_client, false);
 }
