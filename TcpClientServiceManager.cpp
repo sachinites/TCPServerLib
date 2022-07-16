@@ -137,8 +137,9 @@ TcpClientServiceManager::StartTcpClientServiceManagerThreadInternal2() {
                     tcp_client->Reference();
                     this->RemoveClientFromDB(tcp_client);
                     tcp_client->UnSetState (TCP_CLIENT_STATE_MULTIPLEX_LISTEN);
+                    tcp_client->UnSetState (TCP_CLIENT_STATE_CONNECTED);
                     this->max_fd = this->GetMaxFd();
-                    this->tcp_ctrlr->EnqueMsg(CTRLR_ACTION_TCP_CLIENT_DELETE, (void *)this, false);
+                    this->tcp_ctrlr->EnqueMsg(CTRLR_ACTION_TCP_CLIENT_DELETE, (void *)tcp_client, false);
                     tcp_client->Dereference();
                 }
                 else {
@@ -213,7 +214,7 @@ TcpClientServiceManager::StartTcpClientServiceManagerThreadInternal() {
                     this->RemoveClientFromDB(tcp_client);
                     tcp_client->UnSetState (TCP_CLIENT_STATE_MULTIPLEX_LISTEN);
                     this->max_fd = this->GetMaxFd();
-                    this->tcp_ctrlr->EnqueMsg(CTRLR_ACTION_TCP_CLIENT_DELETE, (void *)this, false);
+                    this->tcp_ctrlr->EnqueMsg(CTRLR_ACTION_TCP_CLIENT_DELETE, (void *)tcp_client, false);
                     tcp_client->Dereference();
                 }
                 else {

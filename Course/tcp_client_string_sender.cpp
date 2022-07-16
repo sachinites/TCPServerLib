@@ -14,24 +14,6 @@
 #define SRC_PORT	     40010
 #define LOCAL_IP_ADDRESS "127.0.0.1"
 
-#pragma pack (push,1)
-typedef struct _test_struct{
-
-    uint16_t msg_size;
-    unsigned int a;
-    unsigned int b;
-} test_struct_t;
-#pragma pack(pop)
-
-typedef struct result_struct_{
-
-    unsigned int c;
-
-} result_struct_t;
-
-test_struct_t client_data[2];
-result_struct_t result;
-
 void
 setup_tcp_communication(){
 
@@ -85,10 +67,11 @@ setup_tcp_communication(){
     /*Step 4 : get the data to be sent to server*/
     /*Our client is now ready to send data to server. sendto() sends data to Server*/
 
-    while (1) {
-    usleep(1000);
     const char *msg = "Hello Abhishek, how are you";
     int len = strlen (msg);
+
+    while (1) {
+    //usleep(1000);
 
     /*step 5 : send the data to server*/
     sent_recv_bytes = sendto(sockfd, 

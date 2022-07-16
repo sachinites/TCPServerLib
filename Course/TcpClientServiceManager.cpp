@@ -91,7 +91,7 @@ TcpClientServiceManager::StartTcpClientServiceManagerThreadInternal() {
                 next_tcp_client = *(++it);
 
                 if (FD_ISSET(tcp_client->comm_fd, &this->active_fd_set)) {
-
+                    
                     rcv_bytes = recvfrom(tcp_client->comm_fd,
                                                         client_recv_buffer, 
                                                         TCP_CLIENT_RECV_BUFFER_SIZE,
@@ -107,6 +107,7 @@ TcpClientServiceManager::StartTcpClientServiceManagerThreadInternal() {
                                         client_recv_buffer, rcv_bytes);
                     }
                 }
+                memset (client_recv_buffer, 0, rcv_bytes);
         }
     }
 }

@@ -17,7 +17,6 @@
 #define TCP_CLIENT_STATE_KA_EXPIRED   64
 #define TCP_CLIENT_STATE_MULTIPLEX_LISTEN 128
 #define TCP_CLIENT_STATE_THREADED 256
-#define TCP_CLIENT_CONNECTION_CLOSED    1024
 
 typedef uint32_t client_state_bit;
 
@@ -55,8 +54,8 @@ class TcpClient {
 	    int SendMsg(char *, uint32_t);
         void StartThread();
         void StopThread();
+        void StopConnectorThread ();
         void ClientThreadFunction();
-        void trace();
         TcpClient * Dereference();
         void Reference();
         void Display();

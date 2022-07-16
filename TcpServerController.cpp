@@ -32,6 +32,8 @@ TcpServerController::~TcpServerController() {
     assert(!this->tcp_new_conn_acc);
     assert(!this->tcp_client_db_mgr);
     assert(!this->tcp_client_svc_mgr);
+    assert (this->connectpendingClients.empty());
+    assert (this->establishedClient.empty());
     printf ("TcpServerController %s Stopped\n", this->name.c_str());
 }
 
@@ -67,6 +69,8 @@ TcpServerController::Start() {
 void
 TcpServerController::Stop() {
 
+    TcpClient *tcp_client;
+
     this->tcp_new_conn_acc->Stop();
     this->tcp_new_conn_acc = NULL;
 
@@ -79,6 +83,29 @@ TcpServerController::Stop() {
     this->tcp_client_db_mgr->Purge();
     delete this->tcp_client_db_mgr;
     this->tcp_client_db_mgr = NULL;
+
+    pthread_rwlock_wrlock (&this->connect_db_rwlock);
+
+    while (!this->connectpendingClients.empty()) {
+        
+        tcp_client = this->connectpendingClients.front();
+        assert (tcp_client->IsStateSet (TCP_CLIENT_STATE_CONNECT_IN_PROGRESS));
+        tcp_client->StopConnectorThread();
+        this->connectpendingClients.pop_front();
+        tcp_client->Dereference();
+    }
+
+    while (!this->establishedClient.empty()) {
+
+        tcp_client = this->establishedClient.front();
+        assert (tcp_client->IsStateSet (TCP_CLIENT_STATE_CONNECTED));
+        tcp_client->StopThread();
+        this->establishedClient.pop_front();
+        tcp_client->Dereference();
+    }
+
+    pthread_rwlock_unlock (&this->connect_db_rwlock);
+    pthread_rwlock_destroy (&this->connect_db_rwlock);
 
     UNSET_BIT32(this->state_flags, TCP_SERVER_RUNNING);
     delete this;
@@ -284,6 +311,21 @@ TcpServerController::Display() {
     printf ("Listening on : [%s, %d]\n", network_convert_ip_n_to_p(this->ip_addr, 0), this->port_no);
 
     this->tcp_client_db_mgr->DisplayClientDb();
+
+    pthread_rwlock_rdlock (&this->connect_db_rwlock);
+
+    for (it = this->connectpendingClients.begin(); it != this->connectpendingClients.end(); ++it) {
+
+        tcp_client = *it;
+        tcp_client->Display();
+    }
+
+    for (it = this->establishedClient.begin(); it != this->establishedClient.end(); ++it) {
+
+        tcp_client = *it;
+        tcp_client->Display();
+    }
+    pthread_rwlock_unlock (&this->connect_db_rwlock);
 }
 
 void 
@@ -357,7 +399,6 @@ TcpServerController::ProcessMsgQMsg(TcpServerMsg_t *msg) {
         assert (tcp_client->IsStateSet (TCP_CLIENT_STATE_ACTIVE_OPENER));
         assert (!tcp_client->IsStateSet (TCP_CLIENT_STATE_MULTIPLEX_LISTEN));
         assert (!tcp_client->IsStateSet (TCP_CLIENT_STATE_THREADED));
-        assert (!tcp_client->IsStateSet (TCP_CLIENT_CONNECTION_CLOSED));
         pthread_rwlock_wrlock (&this->connect_db_rwlock);
         this->connectpendingClients.remove(tcp_client);
         this->establishedClient.push_back(tcp_client);

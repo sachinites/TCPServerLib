@@ -43,10 +43,11 @@ TcpClient::~TcpClient() {
 
     assert(!this->comm_fd);
     assert(!this->client_thread);
+    assert(!this->active_connect_thread);
     assert(!this->ref_count);
     assert(!this->msgd);
     printf ("Client Deleted : ");
-    this->trace();
+    this->Display();
 }
 
 int
@@ -71,9 +72,9 @@ TcpClient::SendMsg(char *msg, uint32_t msg_size) {
 void
 TcpClient::Abort() {
 
-    if (this->client_thread) {
-        this->StopThread();
-    }
+    assert (!this->client_thread);
+    assert (!this->active_connect_thread);
+
     if (this->comm_fd) {
         close(this->comm_fd);
         this->comm_fd = 0;
@@ -206,19 +207,37 @@ TcpClient::StopThread() {
     this->Dereference();
 }
 
-void 
-TcpClient::trace() {
+void
+TcpClient::StopConnectorThread () {
 
-    printf ("Tcp Client (%p): [%s , %d]   ref count = %d\n", 
-        this,
-        network_convert_ip_n_to_p(htonl(this->ip_addr), 0),
-        htons(this->port_no), this->ref_count);
+    assert (this->active_connect_thread);
+    pthread_cancel(*(this->active_connect_thread));
+    pthread_join(*(this->active_connect_thread), NULL);
+    free(this->active_connect_thread);
+    this->active_connect_thread = NULL;
+    this->UnSetState (TCP_CLIENT_STATE_CONNECT_IN_PROGRESS);
+    this->Dereference();
 }
 
 void 
 TcpClient::Display() {
 
-    trace();
+    char ip_addr_str[16];
+    printf ("Tcp Client (%p): [%s , %d]  connected to  [%s , %d] , ref count = %d\n", 
+        this,
+        network_convert_ip_n_to_p((this->ip_addr), ip_addr_str), this->port_no,
+        network_convert_ip_n_to_p(this->server_ip_addr, ip_addr_str), this->server_port_no,
+        this->ref_count);
+        printf ("flags : \n");
+        printf (" %sSet TCP_CLIENT_STATE_CONNECT_IN_PROGRESS\n", this->IsStateSet (TCP_CLIENT_STATE_CONNECT_IN_PROGRESS) ? "" : "Un");
+        printf (" %sSet TCP_CLIENT_STATE_CONNECTED\n", this->IsStateSet (TCP_CLIENT_STATE_CONNECTED) ? "":"Un");
+        printf (" %sSet TCP_CLIENT_STATE_PASSIVE_OPENER\n", this->IsStateSet (TCP_CLIENT_STATE_PASSIVE_OPENER) ? "":"Un");
+        printf (" %sSet TCP_CLIENT_STATE_ACTIVE_OPENER\n", this->IsStateSet (TCP_CLIENT_STATE_ACTIVE_OPENER) ? "":"Un");
+        printf (" %sSet TCP_CLIENT_STATE_KA_BASED\n", this->IsStateSet (TCP_CLIENT_STATE_KA_BASED) ? "":"Un");
+        printf (" %sSet TCP_CLIENT_STATE_KA_EXPIRED\n", this->IsStateSet (TCP_CLIENT_STATE_KA_EXPIRED) ? "":"Un");
+        printf (" %sSet TCP_CLIENT_STATE_MULTIPLEX_LISTEN\n", this->IsStateSet (TCP_CLIENT_STATE_MULTIPLEX_LISTEN) ? "":"Un");
+        printf (" %sSet TCP_CLIENT_STATE_THREADED\n", this->IsStateSet (TCP_CLIENT_STATE_THREADED) ? "":"Un");
+        
 }
 
 void 
@@ -254,6 +273,7 @@ TcpClient::IsStateSet(client_state_bit flag_bit) {
 static void *
 connect_retry_fn(void *arg) {
 
+    char ip_addr_str[16];
     struct sockaddr_in dest;
     TcpClient *tcp_client = (TcpClient *)arg;
     
@@ -265,7 +285,7 @@ connect_retry_fn(void *arg) {
         
         sleep(10);
         
-        printf ("Trying again ....\n");
+        printf ("Trying connecting to [%s, %d] again ....\n", network_convert_ip_n_to_p(tcp_client->server_ip_addr, ip_addr_str), tcp_client->server_port_no);
 
          int rc = connect(tcp_client->comm_fd, (struct sockaddr *)&dest, sizeof(struct sockaddr));
 

@@ -12,15 +12,15 @@ extern void tcp_build_cli();
 static void
 print_client(const TcpClient *client) {
 
-    printf ("[%s , %d]\n", network_convert_ip_n_to_p(htonl(client->ip_addr), 0),
-                htons(client->port_no));
+    printf ("[%s , %d]\n", network_convert_ip_n_to_p((client->ip_addr), 0),
+                (client->port_no));
 }
 
 static void
 print_server(const TcpServerController *tcp_server) {
 
-     printf ("[%s , %d]\n", network_convert_ip_n_to_p(htonl(tcp_server->ip_addr), 0),
-                htons(tcp_server->port_no));
+     printf ("[%s , %d]\n", network_convert_ip_n_to_p((tcp_server->ip_addr), 0),
+                (tcp_server->port_no));
 }
 
 static void

@@ -36,16 +36,15 @@ TcpMsgFixedSizeDemarcar::NotifyMsgToClient(TcpClient *tcp_client) {
 
     uint16_t bytes_read;
     
-    if (!this->IsBufferReadyToflush()) return;
+    while (this->IsBufferReadyToflush()) {
 
-    while (bytes_read = BCBRead(
+    bytes_read = BCBRead(
                 this->TcpMsgDemarcar::bcb, 
                 this->TcpMsgDemarcar::buffer, 
-                this->msg_fixed_size, true)) {
+                this->msg_fixed_size, true);
 
         tcp_client->tcp_ctrlr->client_msg_recvd(tcp_client->tcp_ctrlr, 
                 tcp_client, this->TcpMsgDemarcar::buffer, bytes_read);
-        
-        if (!this->IsBufferReadyToflush()) break;;
+    
     }
 }

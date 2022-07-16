@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-
+ 
 typedef struct ByteCircularBuffer_ {
 
     unsigned char *buffer;
