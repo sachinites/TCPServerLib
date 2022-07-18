@@ -37,7 +37,7 @@ TcpMsgVariableSizeDemarcar::IsBufferReadyToflush() {
 }
 
 void
-TcpMsgVariableSizeDemarcar::NotifyMsgToClient(TcpClient *tcp_client) {
+TcpMsgVariableSizeDemarcar::ProcessClientMsg(TcpClient *tcp_client) {
 
     uint16_t msg_size;
     ByteCircularBuffer_t *bcb = this->TcpMsgDemarcar::bcb;

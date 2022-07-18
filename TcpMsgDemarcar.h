@@ -21,10 +21,12 @@ typedef struct ByteCircularBuffer_ ByteCircularBuffer_t;
 class TcpMsgDemarcar {
 
     private:
-
-    public:
+    protected:
         ByteCircularBuffer_t *bcb;
         unsigned char *buffer;
+
+    public:
+
         static TcpMsgDemarcar *InstantiateTcpMsgDemarcar(
                                                         TcpMsgDemarcarType,
                                                          uint16_t fixed_size,
@@ -33,11 +35,9 @@ class TcpMsgDemarcar {
                                                          unsigned char end_pattern[],
                                                          uint8_t end_pattern_size);
 
-        void CopyData(unsigned char *data, uint16_t data_size);
-
         /* To be Implemented by derieved classes */
         virtual bool IsBufferReadyToflush() = 0;
-        virtual void NotifyMsgToClient(TcpClient *tcp_client) = 0;
+        virtual void ProcessClientMsg(TcpClient *tcp_client) = 0;
 
         /* Constructor */
         TcpMsgDemarcar(uint16_t circular_buffer_len);

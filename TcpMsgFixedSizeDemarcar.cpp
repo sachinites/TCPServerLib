@@ -32,7 +32,7 @@ TcpMsgFixedSizeDemarcar::Destroy() {
 }
 
 void
-TcpMsgFixedSizeDemarcar::NotifyMsgToClient(TcpClient *tcp_client) {
+TcpMsgFixedSizeDemarcar::ProcessClientMsg(TcpClient *tcp_client) {
 
     uint16_t bytes_read;
     

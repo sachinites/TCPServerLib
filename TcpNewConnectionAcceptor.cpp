@@ -106,11 +106,11 @@ TcpNewConnectionAcceptor::StartTcpNewConnectionAcceptorThreadInternal() {
         /* Send Welcome msg to client */
         TcpClient *tcp_client = new TcpClient();
         tcp_client->comm_fd = comm_socket_fd;
-        tcp_client->ip_addr = client_addr.sin_addr.s_addr;
-        tcp_client->port_no = client_addr.sin_port;
+        tcp_client->ip_addr = htonl(client_addr.sin_addr.s_addr);
+        tcp_client->port_no = htons(client_addr.sin_port);
         tcp_client->tcp_ctrlr = this->tcp_ctrlr;
-        tcp_client->server_ip_addr = htonl(this->tcp_ctrlr->ip_addr);
-        tcp_client->server_port_no = htons(this->tcp_ctrlr->port_no);
+        tcp_client->server_ip_addr = this->tcp_ctrlr->ip_addr;
+        tcp_client->server_port_no = (this->tcp_ctrlr->port_no);
         tcp_client->SetState(TCP_CLIENT_STATE_CONNECTED | 
                                           TCP_CLIENT_STATE_PASSIVE_OPENER);
         tcp_client->SetConnectionType(tcp_conn_via_accept);

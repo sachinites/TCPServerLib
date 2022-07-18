@@ -11,7 +11,7 @@ class TcpMsgFixedSizeDemarcar : public TcpMsgDemarcar{
 
     public:
         bool IsBufferReadyToflush();
-        void NotifyMsgToClient(TcpClient *);
+        void ProcessClientMsg(TcpClient *);
         
         TcpMsgFixedSizeDemarcar(uint16_t fixed_size);
 

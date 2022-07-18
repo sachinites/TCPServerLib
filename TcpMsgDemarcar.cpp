@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <memory.h>
 #include <assert.h>
-#include "TcpServerController.h"
 #include "TcpClient.h"
 #include "TcpMsgDemarcar.h"
 #include "TcpMsgFixedSizeDemarcar.h"
@@ -26,15 +25,6 @@ TcpMsgDemarcar::~TcpMsgDemarcar() {
 
     assert(!this->bcb);
     assert(!this->buffer);
-}
-
-void
-TcpMsgDemarcar::CopyData(unsigned char *data, uint16_t data_size) {
-
-    uint16_t bytes_copied;
-
-    bytes_copied = BCBWrite(this->bcb, data, data_size);
-    assert(bytes_copied == data_size);
 }
 
 void
@@ -62,11 +52,11 @@ TcpMsgDemarcar::ProcessMsg(
                      unsigned char* msg_recvd, 
                      uint16_t msg_size) {
 
-    this->CopyData(msg_recvd, msg_size);
+    assert ( BCBWrite (this->bcb, msg_recvd, msg_size) );
 
     if (!this->IsBufferReadyToflush()) return;
 
-   this->NotifyMsgToClient(tcp_client);
+   this->ProcessClientMsg(tcp_client);
 }
 
  TcpMsgDemarcar*

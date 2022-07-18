@@ -222,12 +222,16 @@ TcpClient::StopConnectorThread () {
 void 
 TcpClient::Display() {
 
-    char ip_addr_str[16];
+    char ip_addr_str1[16];
+    char ip_addr_str2[16];
     printf ("Tcp Client (%p): [%s , %d]  connected to  [%s , %d] , ref count = %d\n", 
         this,
-        network_convert_ip_n_to_p((this->ip_addr), ip_addr_str), this->port_no,
-        network_convert_ip_n_to_p(this->server_ip_addr, ip_addr_str), this->server_port_no,
+        network_convert_ip_n_to_p((this->ip_addr), ip_addr_str1), 
+        this->port_no,
+        network_convert_ip_n_to_p(this->server_ip_addr, ip_addr_str2),
+        this->server_port_no,
         this->ref_count);
+
         printf ("flags : \n");
         printf (" %sSet TCP_CLIENT_STATE_CONNECT_IN_PROGRESS\n", this->IsStateSet (TCP_CLIENT_STATE_CONNECT_IN_PROGRESS) ? "" : "Un");
         printf (" %sSet TCP_CLIENT_STATE_CONNECTED\n", this->IsStateSet (TCP_CLIENT_STATE_CONNECTED) ? "":"Un");
@@ -275,6 +279,9 @@ connect_retry_fn(void *arg) {
 
     char ip_addr_str[16];
     struct sockaddr_in dest;
+    struct sockaddr_in self_addr;
+    socklen_t sock_len = sizeof(self_addr);
+
     TcpClient *tcp_client = (TcpClient *)arg;
     
     dest.sin_family = AF_INET;
@@ -285,12 +292,14 @@ connect_retry_fn(void *arg) {
         
         sleep(10);
         
-        printf ("Trying connecting to [%s, %d] again ....\n", network_convert_ip_n_to_p(tcp_client->server_ip_addr, ip_addr_str), tcp_client->server_port_no);
+        printf ("Trying connecting to [%s, %d] again ....\n", 
+            network_convert_ip_n_to_p(tcp_client->server_ip_addr, ip_addr_str), tcp_client->server_port_no);
 
          int rc = connect(tcp_client->comm_fd, (struct sockaddr *)&dest, sizeof(struct sockaddr));
 
          if (!rc) {
-
+             assert(!getsockname( tcp_client->comm_fd, (struct sockaddr *)&self_addr, &sock_len));
+             tcp_client->port_no = htons(self_addr.sin_port);
              tcp_client->UnSetState(TCP_CLIENT_STATE_CONNECT_IN_PROGRESS);
              tcp_client->SetState(TCP_CLIENT_STATE_CONNECTED);
              if (tcp_client->tcp_ctrlr->client_connected)
@@ -314,6 +323,9 @@ int
 TcpClient::TryClientConnect (bool try_again) {
 
     struct sockaddr_in dest;
+    struct sockaddr_in self_addr;
+    socklen_t sock_len = sizeof(self_addr);
+
     TcpClient *tcp_client = this;
 
     assert (!tcp_client->active_connect_thread);
@@ -336,6 +348,8 @@ TcpClient::TryClientConnect (bool try_again) {
     if (!rc) {
         tcp_client->UnSetState(TCP_CLIENT_STATE_CONNECT_IN_PROGRESS);
         tcp_client->SetState(TCP_CLIENT_STATE_CONNECTED);
+        assert(!getsockname( tcp_client->comm_fd, (struct sockaddr *)&self_addr, &sock_len));
+        tcp_client->port_no = htons(self_addr.sin_port);
         if (tcp_client->tcp_ctrlr->client_connected) {
             tcp_client->tcp_ctrlr->client_connected(tcp_client->tcp_ctrlr, tcp_client);
         }
