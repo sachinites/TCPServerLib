@@ -298,10 +298,11 @@ connect_retry_fn(void *arg) {
          int rc = connect(tcp_client->comm_fd, (struct sockaddr *)&dest, sizeof(struct sockaddr));
 
          if (!rc) {
-             assert(!getsockname( tcp_client->comm_fd, (struct sockaddr *)&self_addr, &sock_len));
-             tcp_client->port_no = htons(self_addr.sin_port);
              tcp_client->UnSetState(TCP_CLIENT_STATE_CONNECT_IN_PROGRESS);
              tcp_client->SetState(TCP_CLIENT_STATE_CONNECTED);
+             assert(!getsockname( tcp_client->comm_fd, (struct sockaddr *)&self_addr, &sock_len));
+             tcp_client->port_no = htons(self_addr.sin_port);
+             
              if (tcp_client->tcp_ctrlr->client_connected)
              {
                  tcp_client->tcp_ctrlr->client_connected(tcp_client->tcp_ctrlr, tcp_client);

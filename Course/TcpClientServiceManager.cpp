@@ -7,9 +7,9 @@
 #include "TcpServerController.h"
 #include "TcpClientServiceManager.h"
 #include "TcpClient.h"
+#include "TcpMsgDemarcar.h"
 
-#define TCP_CLIENT_RECV_BUFFER_SIZE 1024
-unsigned char client_recv_buffer[TCP_CLIENT_RECV_BUFFER_SIZE];
+unsigned char client_recv_buffer[MAX_CLIENT_BUFFER_SIZE];
                                                         
 TcpClientServiceManager::TcpClientServiceManager(TcpServerController *tcp_ctrlr) {
 
@@ -94,7 +94,7 @@ TcpClientServiceManager::StartTcpClientServiceManagerThreadInternal() {
                     
                     rcv_bytes = recvfrom(tcp_client->comm_fd,
                                                         client_recv_buffer, 
-                                                        TCP_CLIENT_RECV_BUFFER_SIZE,
+                                                        MAX_CLIENT_BUFFER_SIZE,
                                                         0,
                                                         (struct sockaddr *)&client_addr, &addr_len);
 
@@ -102,10 +102,14 @@ TcpClientServiceManager::StartTcpClientServiceManagerThreadInternal() {
                         printf ("error no = %d\n", errno);
                         sleep(1);
                     }
-                    if (this->tcp_ctrlr->client_msg_recvd) {
+
+                    if (tcp_client->msgd) {
+                        tcp_client->msgd->ProcessMsg (tcp_client, client_recv_buffer, rcv_bytes);
+                    }
+                    else if  (this->tcp_ctrlr->client_msg_recvd) {
                         this->tcp_ctrlr->client_msg_recvd(this->tcp_ctrlr, tcp_client,
                                         client_recv_buffer, rcv_bytes);
-                    }
+                    }         
                 }
                 memset (client_recv_buffer, 0, rcv_bytes);
         }

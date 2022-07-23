@@ -19,6 +19,7 @@ TcpMsgVariableSizeDemarcar::~TcpMsgVariableSizeDemarcar() {
 void
 TcpMsgVariableSizeDemarcar::Destroy() {
 
+    this->TcpMsgDemarcar::Destroy();
 }
 
 bool 

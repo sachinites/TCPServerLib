@@ -19,7 +19,7 @@ TcpMsgFixedSizeDemarcar::~TcpMsgFixedSizeDemarcar() {
 bool 
 TcpMsgFixedSizeDemarcar::IsBufferReadyToflush() {
 
-    if ((this->TcpMsgDemarcar::GetTotalMsgSize() / this->msg_fixed_size) > 0) {
+    if ((this->TcpMsgDemarcar::bcb->current_size / this->msg_fixed_size) > 0) {
         return true;
     }
     return false;
