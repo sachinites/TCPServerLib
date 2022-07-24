@@ -8,6 +8,7 @@
 #include "TcpClient.h"
 #include "TcpMsgDemarcar.h"
 #include "TcpMsgFixedSizeDemarcar.h"
+#include "TcpMsgVariableSizeDemarcar.h"
 
 TcpNewConnectionAcceptor::TcpNewConnectionAcceptor(TcpServerController *tcp_ctrlr) {
 
@@ -98,12 +99,12 @@ TcpNewConnectionAcceptor::StartTcpNewConnectionAcceptorThreadInternal() {
             this->tcp_ctrlr->client_connected(this->tcp_ctrlr, tcp_client);
         }
         
-        tcp_client->msgd = new TcpMsgFixedSizeDemarcar(27);
+        tcp_client->msgd = new TcpMsgVariableSizeDemarcar();
 
         /* Tell the TCP Controller, to further process the Client */
         this->tcp_ctrlr->ProcessNewClient(tcp_client);
         
-        printf ("Connection Acceptted from Client [%s, %d]\n",
+        printf ("Connection Accepted from Client [%s, %d]\n",
                 network_convert_ip_n_to_p(htonl(client_addr.sin_addr.s_addr) , 0),
                 htons(client_addr.sin_port));
     }

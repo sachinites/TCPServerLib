@@ -6,7 +6,6 @@
 #include "TcpClientDbManager.h"
 #include "TcpClientServiceManager.h"
 #include "TcpMsgDemarcar.h"
-#include "bitsop.h"
 #include "network_utils.h"
 #include "TcpClient.h"
 
@@ -24,7 +23,7 @@ TcpServerController::TcpServerController(std::string ip_addr,  uint16_t port_no,
     pthread_mutex_init (&this->msgq_mutex, NULL);
     pthread_cond_init (&this->msgq_cv, NULL);
     pthread_rwlock_init(&this->connect_db_rwlock, NULL);
-    SET_BIT(this->state_flags, TCP_SERVER_INITIALIZED);
+    this->SetBit(TCP_SERVER_INITIALIZED);
 }
 
 TcpServerController::~TcpServerController() {
@@ -60,7 +59,7 @@ TcpServerController::Start() {
     /* Initializing and Starting TCP Server Msg Q Thread */
     pthread_create (&this->msgQ_op_thread, NULL, tcp_server_msgq_thread_fn, (void *)this);
 
-    SET_BIT(this->state_flags, TCP_SERVER_RUNNING);
+    this->SetBit(TCP_SERVER_RUNNING);
 
     printf ("Tcp Server is Up and Running [%s, %d]\nOk.\n", 
         network_convert_ip_n_to_p(this->ip_addr, 0), this->port_no);
@@ -107,7 +106,7 @@ TcpServerController::Stop() {
     pthread_rwlock_unlock (&this->connect_db_rwlock);
     pthread_rwlock_destroy (&this->connect_db_rwlock);
 
-    UNSET_BIT32(this->state_flags, TCP_SERVER_RUNNING);
+    this->UnSetBit(TCP_SERVER_RUNNING);
     delete this;
 }
 
@@ -121,22 +120,22 @@ void
 TcpServerController::SetAcceptNewConnectionStatus(bool status) {
 
     if (status &&
-        !IS_BIT_SET(this->state_flags, TCP_SERVER_NOT_ACCEPTING_NEW_CONNECTIONS)) {
+        !this->IsBitSet (TCP_SERVER_NOT_ACCEPTING_NEW_CONNECTIONS)) {
             return;
      }
 
      if (!status && 
-          IS_BIT_SET(this->state_flags, TCP_SERVER_NOT_ACCEPTING_NEW_CONNECTIONS)) {
+         !this->IsBitSet ( TCP_SERVER_NOT_ACCEPTING_NEW_CONNECTIONS)) {
               return;
     }
 
     this->tcp_new_conn_acc->SetAcceptNewConnectionStatus(status);
 
     if (status) {
-        UNSET_BIT32(this->state_flags, TCP_SERVER_NOT_ACCEPTING_NEW_CONNECTIONS);
+        this->UnSetBit(TCP_SERVER_NOT_ACCEPTING_NEW_CONNECTIONS);
     }
     else {
-        SET_BIT(this->state_flags, TCP_SERVER_NOT_ACCEPTING_NEW_CONNECTIONS);
+        this->SetBit( TCP_SERVER_NOT_ACCEPTING_NEW_CONNECTIONS);
     }
 }
 
@@ -144,20 +143,20 @@ void
 TcpServerController::SetClientCreationMode(bool status) {
 
     if (status &&
-        IS_BIT_SET(this->state_flags, TCP_SERVER_CREATE_MULTI_THREADED_CLIENT)) {
+        this->IsBitSet(TCP_SERVER_CREATE_MULTI_THREADED_CLIENT)) {
             return;
      }
 
      if (!status && 
-          !IS_BIT_SET(this->state_flags, TCP_SERVER_CREATE_MULTI_THREADED_CLIENT)) {
+          !this->IsBitSet( TCP_SERVER_CREATE_MULTI_THREADED_CLIENT)) {
               return;
     }
 
      if (status) {
-        SET_BIT(this->state_flags, TCP_SERVER_CREATE_MULTI_THREADED_CLIENT);
+        this->SetBit( TCP_SERVER_CREATE_MULTI_THREADED_CLIENT);
     }
     else {
-        UNSET_BIT32(this->state_flags, TCP_SERVER_CREATE_MULTI_THREADED_CLIENT);
+        this->UnSetBit(TCP_SERVER_CREATE_MULTI_THREADED_CLIENT);
     }
 }
 
@@ -188,7 +187,7 @@ TcpServerController::ProcessNewClient(TcpClient *tcp_client) {
 
     this->tcp_client_db_mgr->AddClientToDB(tcp_client);
 
-    if (IS_BIT_SET(this->state_flags , TCP_SERVER_CREATE_MULTI_THREADED_CLIENT)) {
+    if (this->IsBitSet(TCP_SERVER_CREATE_MULTI_THREADED_CLIENT)) {
 
         this->CreateMultiThreadedClient(tcp_client);
     }
@@ -494,4 +493,22 @@ TcpServerController::CreateActiveClient (uint32_t server_ip_addr, uint16_t serve
         assert (!tcp_client->IsStateSet (TCP_CLIENT_STATE_THREADED));
         this->CreateMultiThreadedClient(tcp_client);
     }
+}
+
+void
+TcpServerController::SetBit(uint32_t bit) {
+
+    this->state_flags |= bit;
+}
+
+void
+TcpServerController::UnSetBit(uint32_t bit) {
+
+     this->state_flags &= ~bit;
+}
+
+bool
+TcpServerController::IsBitSet(uint32_t bit) {
+
+    return (this->state_flags & bit);
 }

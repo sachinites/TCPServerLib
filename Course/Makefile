@@ -10,7 +10,8 @@ OBJS=TcpClientDBManager.o 		 		\
 			TcpClient.o							 		 \
 			ByteCircularBuffer.o				   \
 			TcpMsgDemarcar.o					 \
-			TcpMsgFixedSizeDemarcar.o
+			TcpMsgFixedSizeDemarcar.o	  \
+			TcpMsgVariableSizeDemarcar.o
 
 testapp.exe:testapp.o ${OBJS}
 	${CC} ${CFLAGS} ${OBJS} testapp.o -o testapp.exe ${LIBS}
@@ -45,6 +46,9 @@ TcpMsgDemarcar.o:TcpMsgDemarcar.cpp
 TcpMsgFixedSizeDemarcar.o:TcpMsgFixedSizeDemarcar.cpp
 	${CC} ${CFLAGS} -c TcpMsgFixedSizeDemarcar.cpp -o TcpMsgFixedSizeDemarcar.o
 	
+TcpMsgVariableSizeDemarcar.o:TcpMsgVariableSizeDemarcar.cpp
+	${CC} ${CFLAGS} -c TcpMsgVariableSizeDemarcar.cpp -o TcpMsgVariableSizeDemarcar.o
+
 clean:
 	rm -f *.o
 	rm -f *exe

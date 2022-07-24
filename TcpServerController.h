@@ -14,12 +14,12 @@ class TcpClientDbManager;
 class TcpClient;
 
 /* Server States */
-#define TCP_SERVER_INITIALIZED (0)
-#define TCP_SERVER_RUNNING (1)
-#define TCP_SERVER_NOT_ACCEPTING_NEW_CONNECTIONS (2)
-#define TCP_SERVER_NOT_LISTENING_CLIENTS (3)
-#define TCP_SERVER_CREATE_MULTI_THREADED_CLIENT (4)
-#define TCP_SERVER_STATE_MAX (5)
+#define TCP_SERVER_INITIALIZED (1)
+#define TCP_SERVER_RUNNING (2)
+#define TCP_SERVER_NOT_ACCEPTING_NEW_CONNECTIONS (4)
+#define TCP_SERVER_NOT_LISTENING_CLIENTS (8)
+#define TCP_SERVER_CREATE_MULTI_THREADED_CLIENT (16)
+#define TCP_SERVER_STATE_MAX (32)
 
 typedef enum tcp_server_msg_code_ {
 
@@ -79,6 +79,9 @@ public:
     void Start();
     void Stop();
     uint32_t GetStateFlags();
+    void SetBit (uint32_t bit);
+    void UnSetBit (uint32_t bit);
+    bool IsBitSet (uint32_t bit);
     void SetAcceptNewConnectionStatus(bool);
     void SetClientCreationMode(bool);
     void SetServerNotifCallbacks(void (*client_connected)(const TcpServerController *, const TcpClient *), 

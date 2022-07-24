@@ -67,16 +67,27 @@ setup_tcp_communication(){
     /*Step 4 : get the data to be sent to server*/
     /*Our client is now ready to send data to server. sendto() sends data to Server*/
 
-    const char *msg = "Hello Abhishek, how are you";
-    int len = strlen (msg);
+    const char *msg1 = "Hello Abhishek, ";
+    const char *msg2 = "how are you";
+    int len1 = strlen (msg1);
+    int len2 = strlen (msg2);
 
     while (1) {
     //usleep(1000);
 
     /*step 5 : send the data to server*/
     sent_recv_bytes = sendto(sockfd, 
-           msg,
-           len,
+           msg1,
+           len1,
+           0, 
+           (struct sockaddr *)&dest, 
+           sizeof(struct sockaddr));
+ 
+    printf("No of bytes sent = %d\n", sent_recv_bytes);
+    
+    sent_recv_bytes = sendto(sockfd, 
+           msg2,
+           len2,
            0, 
            (struct sockaddr *)&dest, 
            sizeof(struct sockaddr));
