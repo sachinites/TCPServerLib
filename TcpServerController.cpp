@@ -23,6 +23,7 @@ TcpServerController::TcpServerController(std::string ip_addr,  uint16_t port_no,
     pthread_mutex_init (&this->msgq_mutex, NULL);
     pthread_cond_init (&this->msgq_cv, NULL);
     pthread_rwlock_init(&this->connect_db_rwlock, NULL);
+    this->state_flags = 0;
     this->SetBit(TCP_SERVER_INITIALIZED);
 }
 

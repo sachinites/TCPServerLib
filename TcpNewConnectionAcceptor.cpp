@@ -14,7 +14,6 @@
 #include "TcpClientDbManager.h"
 #include "TcpClient.h"
 #include "network_utils.h"
-#include "bitsop.h"
 
 TcpNewConnectionAcceptor::TcpNewConnectionAcceptor(TcpServerController *TcpServerController) {
 
@@ -125,8 +124,7 @@ TcpNewConnectionAcceptor::StartTcpNewConnectionAcceptorThreadInternal() {
             TcpMsgDemarcar::InstantiateTcpMsgDemarcar(
                 this->tcp_ctrlr->msgd_type, 27, 0, 0, 0, 0));
        
-       if (IS_BIT_SET( this->tcp_ctrlr->GetStateFlags() ,
-                TCP_SERVER_CREATE_MULTI_THREADED_CLIENT)) {
+       if (this->tcp_ctrlr->IsBitSet( TCP_SERVER_CREATE_MULTI_THREADED_CLIENT)) {
 
           ctrlr_code = CTRLR_ACTION_TCP_CLIENT_CREATE_THREADED;
       }   
