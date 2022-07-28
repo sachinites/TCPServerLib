@@ -1,7 +1,7 @@
 CC=g++
 CFLAGS=-g
 TARGET:testapp.exe
-LIBS=-lpthread
+LIBS=-lpthread -LCommandParser -lcli
 OBJS=TcpClientDBManager.o 		 		\
 			TcpClientServiceManager.o 		 \
 			TcpNewConnectionAcceptor.o 	 \
@@ -11,9 +11,9 @@ OBJS=TcpClientDBManager.o 		 		\
 			ByteCircularBuffer.o				   \
 			TcpMsgDemarcar.o					 \
 			TcpMsgFixedSizeDemarcar.o	  \
-			TcpMsgVariableSizeDemarcar.o
+			TcpMsgVariableSizeDemarcar.o \
 
-testapp.exe:testapp.o ${OBJS}
+testapp.exe:testapp.o ${OBJS} CommandParser/libcli.a
 	${CC} ${CFLAGS} ${OBJS} testapp.o -o testapp.exe ${LIBS}
 
 testapp.o:testapp.cpp
@@ -49,6 +49,10 @@ TcpMsgFixedSizeDemarcar.o:TcpMsgFixedSizeDemarcar.cpp
 TcpMsgVariableSizeDemarcar.o:TcpMsgVariableSizeDemarcar.cpp
 	${CC} ${CFLAGS} -c TcpMsgVariableSizeDemarcar.cpp -o TcpMsgVariableSizeDemarcar.o
 
+CommandParser/libcli.a:
+	(cd CommandParser; make)
+
 clean:
 	rm -f *.o
 	rm -f *exe
+	(cd CommandParser; make clean)

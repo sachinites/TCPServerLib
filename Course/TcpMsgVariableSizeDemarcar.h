@@ -10,7 +10,7 @@ class TcpMsgVariableSizeDemarcar : public TcpMsgDemarcar{
 
     private:
     public:
-        bool IsBufferReadyToflush();
+        bool IsBufferReadyToFlush();
         void ProcessClientMsg(TcpClient *);
         
         TcpMsgVariableSizeDemarcar();

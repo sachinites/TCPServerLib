@@ -23,7 +23,7 @@ TcpMsgVariableSizeDemarcar::Destroy() {
 }
 
 bool 
-TcpMsgVariableSizeDemarcar::IsBufferReadyToflush() {
+TcpMsgVariableSizeDemarcar::IsBufferReadyToFlush() {
 
     uint16_t msg_size;
    ByteCircularBuffer_t *bcb = this->TcpMsgDemarcar::bcb;
@@ -43,7 +43,7 @@ TcpMsgVariableSizeDemarcar::ProcessClientMsg(TcpClient *tcp_client) {
     uint16_t msg_size;
     ByteCircularBuffer_t *bcb = this->TcpMsgDemarcar::bcb;
 
-    while (this->IsBufferReadyToflush()) {
+    while (this->IsBufferReadyToFlush()) {
 
         BCBRead(bcb, (unsigned char *)&msg_size, HDR_MSG_SIZE, false);
         assert(msg_size == BCBRead(bcb, this->TcpMsgDemarcar::buffer, msg_size, true));

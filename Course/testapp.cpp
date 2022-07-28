@@ -2,6 +2,8 @@
 #include "TcpClient.h"
 #include "network_utils.h"
 #include <arpa/inet.h> 
+#include "CommandParser/libcli.h"
+#include "CommandParser/cmdtlv.h"
 
 static void
 print_client(const TcpClient *tcp_client) {
@@ -40,10 +42,7 @@ appln_client_msg_recvd (const TcpServerController *tcp_server, const TcpClient *
 int
 main(int argc, char **argv) {
 
-    TcpServerController *server1 = new TcpServerController("127.0.0.1", 40000, "Default TCP Server");
-    server1->SetServerNotifCallbacks(appln_client_connected, appln_client_disconnected, appln_client_msg_recvd);
-    server1->Start();
-    scanf("\n");
-    server1->Display();
+    init_libcli();
+    start_shell();
     return 0;
 }
