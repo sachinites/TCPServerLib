@@ -1,7 +1,7 @@
 CC=g++
 CFLAGS=-g
 TARGET:testapp.exe
-LIBS=-lpthread -LCommandParser -lcli
+LIBS=-lpthread -LCommandParser -lcli -lrt
 OBJS=TcpClientDBManager.o 		 		\
 			TcpClientServiceManager.o 		 \
 			TcpNewConnectionAcceptor.o 	 \

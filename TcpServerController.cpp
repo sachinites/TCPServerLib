@@ -308,6 +308,12 @@ TcpServerController::Display() {
     std::list<TcpClient *>::iterator it;
 
     printf ("Server Name : %s\n", this->name.c_str());
+
+    if (!this->IsBitSet (TCP_SERVER_RUNNING)) {
+        printf ("Not Running\n");
+        return;
+    }
+
     printf ("Listening on : [%s, %d]\n", network_convert_ip_n_to_p(this->ip_addr, 0), this->port_no);
 
     this->tcp_client_db_mgr->DisplayClientDb();
