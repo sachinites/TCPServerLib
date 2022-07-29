@@ -99,7 +99,7 @@ TcpNewConnectionAcceptor::StartTcpNewConnectionAcceptorThreadInternal() {
             this->tcp_ctrlr->client_connected(this->tcp_ctrlr, tcp_client);
         }
         
-        tcp_client->msgd = new TcpMsgVariableSizeDemarcar();
+        tcp_client->msgd = NULL;
 
         /* Tell the TCP Controller, to further process the Client */
         this->tcp_ctrlr->ProcessNewClient(tcp_client);
