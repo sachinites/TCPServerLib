@@ -92,6 +92,9 @@ TcpNewConnectionAcceptor::StartTcpNewConnectionAcceptorThreadInternal() {
             htonl(client_addr.sin_addr.s_addr),
             htons(client_addr.sin_port));
 
+        tcp_client->server_ip_addr = this->tcp_ctrlr->ip_addr;
+        tcp_client->server_port_no = this->tcp_ctrlr->port_no;
+        
         tcp_client->tcp_ctrlr = this->tcp_ctrlr;
         tcp_client->comm_fd = comm_sock_fd;
 

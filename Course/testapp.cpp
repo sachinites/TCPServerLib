@@ -7,6 +7,7 @@
 
 #define TCP_SERVER_CREATE 1
 #define TCP_SERVER_START 2
+#define TCP_SERVER_SHOW_TCP_SERVER 3
 
 static void
 print_client(const TcpClient *tcp_client) {
@@ -66,7 +67,7 @@ TcpServer_lookup (std::string tcp_sever_name) {
 }
 
 
-int
+static int
 config_tcp_server_handler (param_t *param, ser_buff_t *ser_buff, op_mode enable_or_disable) {
 
     int cmd_code;
@@ -119,6 +120,39 @@ config_tcp_server_handler (param_t *param, ser_buff_t *ser_buff, op_mode enable_
     return 0;
 }
 
+static int
+show_tcp_server_handler (param_t *param, ser_buff_t *ser_buff, op_mode enable_or_disable) {
+
+    int cmd_code;
+    char *server_name = NULL;
+    tlv_struct_t *tlv = NULL;
+    TcpServerController *tcp_server = NULL;
+
+    cmd_code = EXTRACT_CMD_CODE(ser_buff);
+
+        TLV_LOOP_BEGIN(ser_buff, tlv) {
+
+            if (strncmp(tlv->leaf_id, "tcp-server-name", strlen("tcp-server-name")) == 0) {
+                server_name = tlv->value;
+             }
+
+        }  TLV_LOOP_END;
+
+    switch(cmd_code) {
+       case TCP_SERVER_SHOW_TCP_SERVER:
+            tcp_server = TcpServer_lookup (std::string(server_name));
+            if (!tcp_server) {
+                printf ("Error : Tcp Server do not Exist\n");
+                return -1;
+            }
+            tcp_server->Display();
+        default:;
+        break;
+    }
+    return 0;
+}
+
+
 static void
 tcp_build_config_cli_tree() {
 
@@ -164,6 +198,18 @@ static void
 tcp_build_show_cli_tree() {
     
     param_t *show_hook = libcli_get_show_hook();
+
+       /* show tcp-server ...*/
+        static param_t tcp_server;
+        init_param (&tcp_server, CMD, "tcp-server", NULL, NULL, INVALID, NULL, "show tcp-server");
+        libcli_register_param (show_hook, &tcp_server);
+        {
+            /* show tcp-server <name> */
+            static param_t tcp_server_name;
+            init_param(&tcp_server_name, LEAF, NULL, show_tcp_server_handler, NULL, STRING, "tcp-server-name", "Tcp Server Name");
+            libcli_register_param (&tcp_server, &tcp_server_name);
+            set_param_cmd_code(&tcp_server_name, TCP_SERVER_SHOW_TCP_SERVER);
+        }
 }
 
 static void
