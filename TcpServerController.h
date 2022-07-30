@@ -19,7 +19,6 @@ class TcpClient;
 #define TCP_SERVER_NOT_ACCEPTING_NEW_CONNECTIONS (4)
 #define TCP_SERVER_NOT_LISTENING_CLIENTS (8)
 #define TCP_SERVER_CREATE_MULTI_THREADED_CLIENT (16)
-#define TCP_SERVER_STATE_MAX (32)
 
 typedef enum tcp_server_msg_code_ {
 
@@ -82,7 +81,7 @@ public:
     void SetBit (uint32_t bit);
     void UnSetBit (uint32_t bit);
     bool IsBitSet (uint32_t bit);
-    void SetAcceptNewConnectionStatus(bool);
+
     void SetClientCreationMode(bool);
     void SetServerNotifCallbacks(void (*client_connected)(const TcpServerController *, const TcpClient *), 
                                                     void (*client_disconnected)(const TcpServerController *, const TcpClient *),
@@ -104,10 +103,16 @@ public:
 
     /* To Pass the Request to Multiplex Service Mgr, this is Synchronous */
     void ClientFDStartListen(TcpClient *tcp_client);
-    void StopListeningAllClients();
 
     /* Used my Multiplex service for client migration */
     void CreateMultiThreadedClient(TcpClient *);
+
+    /* Accept/No Accept of new Connections */
+    void StopAcceptingNewConnections();
+    void StartAcceptingNewConnections();
+    /* Listen for Connected Clients */
+    void StopClientSvcMgr();
+    void StartClientSvcMgr();
 
     void SetTcpMsgDemarcar(TcpMsgDemarcarType);
 

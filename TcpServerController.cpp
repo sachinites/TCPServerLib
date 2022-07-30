@@ -54,8 +54,12 @@ TcpServerController::Start() {
     assert(this->tcp_client_db_mgr);
     assert(this->tcp_client_svc_mgr);
 
-    this->tcp_new_conn_acc->StartTcpNewConnectionAcceptorThread();
-    this->tcp_client_svc_mgr->StartTcpClientServiceManagerThread();
+    if (!this->IsBitSet (TCP_SERVER_NOT_ACCEPTING_NEW_CONNECTIONS)) {
+        this->tcp_new_conn_acc->StartTcpNewConnectionAcceptorThread();
+    }
+    if (!this->IsBitSet (TCP_SERVER_NOT_LISTENING_CLIENTS)) {
+        this->tcp_client_svc_mgr->StartTcpClientServiceManagerThread();
+    }
 
     /* Initializing and Starting TCP Server Msg Q Thread */
     pthread_create (&this->msgQ_op_thread, NULL, tcp_server_msgq_thread_fn, (void *)this);
@@ -71,11 +75,17 @@ TcpServerController::Stop() {
 
     TcpClient *tcp_client;
 
-    this->tcp_new_conn_acc->Stop();
-    this->tcp_new_conn_acc = NULL;
+    if (this->tcp_new_conn_acc) {
+        this->tcp_new_conn_acc->Stop();
+        this->tcp_new_conn_acc = NULL;
+        this->SetBit (TCP_SERVER_NOT_ACCEPTING_NEW_CONNECTIONS);
+    }
 
-    this->tcp_client_svc_mgr->Stop();
-    this->tcp_client_svc_mgr = NULL;
+    if (this->tcp_client_svc_mgr) {
+        this->tcp_client_svc_mgr->Stop();
+        this->tcp_client_svc_mgr = NULL;
+        this->SetBit (TCP_SERVER_NOT_LISTENING_CLIENTS);
+    }
 
     /* Stopping the above two services first ensures that
         now no thread is alive which could add tcpclient back into
@@ -117,28 +127,6 @@ TcpServerController::GetStateFlags() {
     return this->state_flags;
 }
 
-void
-TcpServerController::SetAcceptNewConnectionStatus(bool status) {
-
-    if (status &&
-        !this->IsBitSet (TCP_SERVER_NOT_ACCEPTING_NEW_CONNECTIONS)) {
-            return;
-     }
-
-     if (!status && 
-         !this->IsBitSet ( TCP_SERVER_NOT_ACCEPTING_NEW_CONNECTIONS)) {
-              return;
-    }
-
-    this->tcp_new_conn_acc->SetAcceptNewConnectionStatus(status);
-
-    if (status) {
-        this->UnSetBit(TCP_SERVER_NOT_ACCEPTING_NEW_CONNECTIONS);
-    }
-    else {
-        this->SetBit( TCP_SERVER_NOT_ACCEPTING_NEW_CONNECTIONS);
-    }
-}
 
 void
 TcpServerController::SetClientCreationMode(bool status) {
@@ -315,6 +303,45 @@ TcpServerController::Display() {
     }
 
     printf ("Listening on : [%s, %d]\n", network_convert_ip_n_to_p(this->ip_addr, 0), this->port_no);
+
+    printf ("Flags :  ");
+
+    if (this->IsBitSet (TCP_SERVER_INITIALIZED)) {
+        printf ("I");
+    }
+    else {
+        printf ("Un-I");
+    }
+
+    if (this->IsBitSet (TCP_SERVER_RUNNING)) {
+        printf (" R");
+    }
+    else {
+        printf (" Not-R");
+    }
+
+    if (this->IsBitSet (TCP_SERVER_NOT_ACCEPTING_NEW_CONNECTIONS)) {
+        printf (" Not-Acc");
+    }
+    else {
+        printf (" Acc");
+    }    
+
+    if (this->IsBitSet (TCP_SERVER_NOT_LISTENING_CLIENTS)) {
+        printf (" Not-L");
+    }
+    else {
+        printf (" L");
+    }        
+
+    if (this->IsBitSet (TCP_SERVER_CREATE_MULTI_THREADED_CLIENT)) {
+        printf (" M");
+    }
+    else {
+        printf (" Not-M");
+    }    
+
+    printf ("\n");
 
     this->tcp_client_db_mgr->DisplayClientDb();
 
@@ -518,4 +545,38 @@ bool
 TcpServerController::IsBitSet(uint32_t bit) {
 
     return (this->state_flags & bit);
+}
+
+void 
+TcpServerController::StopAcceptingNewConnections() {
+
+    if (this->IsBitSet (TCP_SERVER_NOT_ACCEPTING_NEW_CONNECTIONS)) return;
+    this->SetBit (TCP_SERVER_NOT_ACCEPTING_NEW_CONNECTIONS);
+    this->tcp_new_conn_acc->Stop();
+}
+
+void
+TcpServerController::StartAcceptingNewConnections() {
+
+    if (!this->IsBitSet (TCP_SERVER_NOT_ACCEPTING_NEW_CONNECTIONS)) return;
+    this->UnSetBit (TCP_SERVER_NOT_ACCEPTING_NEW_CONNECTIONS);
+    this->tcp_new_conn_acc = new TcpNewConnectionAcceptor(this);
+    this->tcp_new_conn_acc->StartTcpNewConnectionAcceptorThread();
+}
+
+void
+TcpServerController::StopClientSvcMgr() {
+
+    if (this->IsBitSet (TCP_SERVER_NOT_LISTENING_CLIENTS)) return;
+    this->tcp_client_svc_mgr->Stop();
+    this->SetBit (TCP_SERVER_NOT_LISTENING_CLIENTS);
+}
+
+void
+TcpServerController::StartClientSvcMgr() {
+
+    if (!this->IsBitSet (TCP_SERVER_NOT_LISTENING_CLIENTS)) return;
+    this->tcp_client_svc_mgr = new TcpClientServiceManager(this);
+    this->tcp_client_svc_mgr->StartTcpClientServiceManagerThread();
+    this->UnSetBit (TCP_SERVER_NOT_LISTENING_CLIENTS);
 }

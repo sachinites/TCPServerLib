@@ -309,13 +309,16 @@ TcpClientServiceManager::ClientFDStartListen2(TcpClient *tcp_client) {
 void
 TcpClientServiceManager::ClientFDStartListen(TcpClient *tcp_client) {
 
-    this->StopTcpClientServiceManagerThread();
-    printf ("Client Svc Mgr thread Cancelled\n");
-
+    if (!this->tcp_ctrlr->IsBitSet (TCP_SERVER_NOT_LISTENING_CLIENTS)) {
+        this->StopTcpClientServiceManagerThread();
+        printf ("Client Svc Mgr thread Cancelled\n");
+    }
     assert(!this->LookUpClientDB(tcp_client->ip_addr, tcp_client->port_no));
     this->AddClientToDB(tcp_client);
     tcp_client->SetState (TCP_CLIENT_STATE_MULTIPLEX_LISTEN);
-    this->StartTcpClientServiceManagerThread();
+    if (!this->tcp_ctrlr->IsBitSet (TCP_SERVER_NOT_LISTENING_CLIENTS)) {
+        this->StartTcpClientServiceManagerThread();
+    }
 }
 
 /* Overloaded fn */
@@ -365,12 +368,6 @@ TcpClientServiceManager::ClientFDStopListen(TcpClient *tcp_client) {
     FD_CLR(tcp_client->comm_fd, &this->backup_fd_set);
     this->tcp_ctrlr->client_disconnected(this->tcp_ctrlr, tcp_client);
     sem_post(&this->sem0_2);
-}
-
-void
-TcpClientServiceManager::StopListeningAllClients() {
-
-
 }
 
 int
@@ -471,7 +468,9 @@ TcpClientServiceManager::Stop() {
 
     this->StopTcpClientServiceManagerThread();
     close(this->udp_fd);
+    this->udp_fd = 0;
     Purge();
+    delete this;
 }
 
 void

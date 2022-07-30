@@ -154,6 +154,36 @@ config_tcp_server_handler (param_t *param,
                     break;
             }
             break;
+        case TCP_SERVER_STOP_CONN_ACCEPT:
+            tcp_server = TcpServer_lookup(std::string(tcp_server_name));
+            if (!tcp_server) {
+                printf("Error : Tcp Server do not Exist\n");
+                return -1;
+            }
+            switch(enable_or_disable) {
+                case CONFIG_ENABLE:
+                    tcp_server->StopAcceptingNewConnections();
+                    break;
+                case CONFIG_DISABLE:
+                    tcp_server->StartAcceptingNewConnections();
+                    break;
+            }             
+            break;
+        case TCP_SERVER_STOP_LISTENING_CLIENTS:
+            tcp_server = TcpServer_lookup(std::string(tcp_server_name));
+            if (!tcp_server) {
+                printf("Error : Tcp Server do not Exist\n");
+                return -1;
+            }
+            switch(enable_or_disable) {
+                case CONFIG_ENABLE:
+                    tcp_server->StopClientSvcMgr();
+                    break;
+                case CONFIG_DISABLE:
+                    tcp_server->StartClientSvcMgr();
+                    break;
+            }                  
+            break;
         default:
             ;
     }
@@ -216,6 +246,20 @@ tcp_build_config_cli_tree() {
                 set_param_cmd_code(&multi_threaded_mode, TCP_SERVER_SET_MULTITHREADED_MODE);
             }
             {
+                 /* config tcp-server <name> [no] disable-conn-accept */
+                static param_t dis_conn_accept;
+                init_param(&dis_conn_accept, CMD, "disable-conn-accept", config_tcp_server_handler, 0, INVALID, 0, "Connection Accept Settings");
+                libcli_register_param(&tcp_server_name, &dis_conn_accept);
+                set_param_cmd_code(&dis_conn_accept, TCP_SERVER_STOP_CONN_ACCEPT);                 
+            }
+            {
+                 /* config tcp-server <name> [no] client-listen */
+                static param_t client_listen;
+                init_param(&client_listen, CMD, "disable-client-listen", config_tcp_server_handler, 0, INVALID, 0, "Client Listening Settings");
+                libcli_register_param(&tcp_server_name, &client_listen);
+                set_param_cmd_code(&client_listen, TCP_SERVER_STOP_LISTENING_CLIENTS);                        
+            }
+            {
                 /* config tcp-server <name> [no] ka-interval <N> */
                 static param_t ka_interval;
                 init_param(&ka_interval, CMD, "ka-interval", 0, 0, INVALID, 0, "config KA Interval");
@@ -244,6 +288,7 @@ tcp_build_config_cli_tree() {
              support_cmd_negation(&tcp_server_name);
         }
     }
+    support_cmd_negation(config_hook);
 }
 static void
 tcp_build_run_cli_tree() {
@@ -330,9 +375,9 @@ print_server(const TcpServerController *tcp_server) {
 
 
 void
-client_connected_cbk(const TcpServerController *tcp_ctrlrl, const TcpClient *tcp_client) {
+client_connected_cbk(const TcpServerController *tcp_ctrlr, const TcpClient *tcp_client) {
 
-    print_server(tcp_ctrlrl);
+    print_server(tcp_ctrlr);
     printf ("Appln : client connected : ");
     print_client(tcp_client);
 }
@@ -346,10 +391,10 @@ client_disconnected_cbk(const TcpServerController *tcp_ctrlr, const TcpClient *t
 }
 
 void
-client_msg_recvd_cbk(const TcpServerController *tcp_ctrlrl, const TcpClient *tcp_client, 
+client_msg_recvd_cbk(const TcpServerController *tcp_ctrlr, const TcpClient *tcp_client, 
                                unsigned char *msg, uint16_t msg_size) {
 
-    print_server(tcp_ctrlrl);
+    print_server(tcp_ctrlr);
     printf ("Appln : client msg recvd = %dB : ", msg_size);
     print_client(tcp_client);
     printf ("msg = %s\n", msg);

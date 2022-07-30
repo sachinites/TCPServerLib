@@ -37,7 +37,6 @@ class TcpClientServiceManager{
         void StartTcpClientServiceManagerThreadInternal();
         void StartTcpClientServiceManagerThreadInternal2();
         void StopTcpClientServiceManagerThread();
-        void StopListeningAllClients();
         void ClientFDStartListen(TcpClient *);
         void ClientFDStartListen2(TcpClient *); 
         void RemoveClientFromDB(TcpClient *);
