@@ -17,6 +17,8 @@ TcpServerController::TcpServerController(
     this->tcp_new_conn_acc = new TcpNewConnectionAcceptor(this);
     this->tcp_client_db_mgr = new TcpClientDbManager(this);
     this->tcp_client_svc_mgr = new TcpClientServiceManager(this);
+
+    this->SetBit (TCP_SERVER_INITIALIZED);
 }
 
 void
@@ -32,6 +34,8 @@ TcpServerController::Start() {
 
     printf ("Tcp Server is Up and Running [%s, %d]\nOk.\n",
         network_convert_ip_n_to_p(this->ip_addr, 0), this->port_no);
+    
+    this->SetBit (TCP_SERVER_RUNNING);
 }
 
 void
@@ -55,7 +59,89 @@ void
 TcpServerController::Display() {
 
     printf ("Server Name : %s\n", this->name.c_str());
+
+    if (!this->IsBitSet (TCP_SERVER_RUNNING)) {
+        printf ("Tcp Server Not Running\n");
+        return;
+    }
+
     printf ("Listening on : [%s, %d]\n", network_convert_ip_n_to_p(this->ip_addr, 0), this->port_no);
 
+   printf ("Flags :  ");
+
+    if (this->IsBitSet (TCP_SERVER_INITIALIZED)) {
+        printf ("I");
+    }
+    else {
+        printf ("Un-I");
+    }
+
+    if (this->IsBitSet (TCP_SERVER_RUNNING)) {
+        printf (" R");
+    }
+    else {
+        printf (" Not-R");
+    }
+
+    if (this->IsBitSet (TCP_SERVER_NOT_ACCEPTING_NEW_CONNECTIONS)) {
+        printf (" Not-Acc");
+    }
+    else {
+        printf (" Acc");
+    }    
+
+    if (this->IsBitSet (TCP_SERVER_NOT_LISTENING_CLIENTS)) {
+        printf (" Not-L");
+    }
+    else {
+        printf (" L");
+    }        
+
+    if (this->IsBitSet (TCP_SERVER_CREATE_MULTI_THREADED_CLIENT)) {
+        printf (" M");
+    }
+    else {
+        printf (" Not-M");
+    }    
+
+    printf ("\n");
+
     this->tcp_client_db_mgr->DisplayClientDb();
+}
+
+
+void
+TcpServerController::SetBit(uint32_t bit) {
+
+    this->state_flags |= bit;
+}
+
+void
+TcpServerController::UnSetBit(uint32_t bit) {
+
+     this->state_flags &= ~bit;
+}
+
+bool
+TcpServerController::IsBitSet(uint32_t bit) {
+
+    return (this->state_flags & bit);
+}
+
+void 
+TcpServerController::StopConnectionAcceptingSvc() {
+
+    if (this->IsBitSet (TCP_SERVER_NOT_ACCEPTING_NEW_CONNECTIONS)) return;
+    this->SetBit (TCP_SERVER_NOT_ACCEPTING_NEW_CONNECTIONS);
+    this->tcp_new_conn_acc->Stop();
+    this->tcp_new_conn_acc = NULL;
+}
+
+void
+TcpServerController::StartConnectionAcceptingSvc() {
+
+    if (!this->IsBitSet (TCP_SERVER_NOT_ACCEPTING_NEW_CONNECTIONS)) return;
+    this->UnSetBit (TCP_SERVER_NOT_ACCEPTING_NEW_CONNECTIONS);
+    this->tcp_new_conn_acc = new TcpNewConnectionAcceptor(this);
+    this->tcp_new_conn_acc->StartTcpNewConnectionAcceptorThread();
 }

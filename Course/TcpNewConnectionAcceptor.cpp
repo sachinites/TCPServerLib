@@ -2,6 +2,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h> // for IPPROTO_TCP
 #include <memory.h>
+#include <unistd.h>
 #include "TcpServerController.h"
 #include "TcpNewConnectionAcceptor.h"
 #include "network_utils.h"
@@ -137,4 +138,27 @@ TcpNewConnectionAcceptor::StartTcpNewConnectionAcceptorThread() {
     }
 
     printf ("Service Started : TcpNewConnectionAcceptorThread\n");
+}
+
+void
+TcpNewConnectionAcceptor::StopTcpNewConnectionAcceptorThread() {
+
+    if (!this->accept_new_conn_thread) return;
+    pthread_cancel (*this->accept_new_conn_thread);
+    /* wait until the thread is cancelled successfully */
+    pthread_join (*this->accept_new_conn_thread, NULL);
+    free(this->accept_new_conn_thread);
+    this->accept_new_conn_thread = NULL;
+}
+
+void 
+TcpNewConnectionAcceptor::Stop() {
+/* 1. Stop the CAS thread if it is running 
+    2. Release the resource ( accept_fd)
+    3. delete this instance of CAS */
+
+    this->StopTcpNewConnectionAcceptorThread();
+    close (this->accept_fd);
+    this->accept_fd = 0;
+    delete this;
 }

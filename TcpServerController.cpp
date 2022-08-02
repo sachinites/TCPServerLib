@@ -553,6 +553,7 @@ TcpServerController::StopConnectionsAcceptorSvc() {
     if (this->IsBitSet (TCP_SERVER_NOT_ACCEPTING_NEW_CONNECTIONS)) return;
     this->SetBit (TCP_SERVER_NOT_ACCEPTING_NEW_CONNECTIONS);
     this->tcp_new_conn_acc->Stop();
+    this->tcp_new_conn_acc = NULL;
 }
 
 void
@@ -570,6 +571,7 @@ TcpServerController::StopClientSvcMgr() {
     if (this->IsBitSet (TCP_SERVER_NOT_LISTENING_CLIENTS)) return;
     this->tcp_client_svc_mgr->Stop();
     this->SetBit (TCP_SERVER_NOT_LISTENING_CLIENTS);
+    this->tcp_client_svc_mgr = NULL;
 }
 
 void
