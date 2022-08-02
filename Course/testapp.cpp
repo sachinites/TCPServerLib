@@ -158,7 +158,6 @@ tcp_build_config_cli_tree() {
 
     /* config tcp-server <name> */
     param_t *config_hook = libcli_get_config_hook();
-
     {
         /* config tcp-server ...*/
         static param_t tcp_server;
@@ -190,8 +189,11 @@ tcp_build_config_cli_tree() {
                 libcli_register_param (&tcp_server_name, &start);
                 set_param_cmd_code(&start, TCP_SERVER_START);
             }
+            support_cmd_negation(&tcp_server_name);
+            /* do not add any param_t here */
         }
     }
+    support_cmd_negation(config_hook);
 }
 
 static void

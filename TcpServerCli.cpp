@@ -162,10 +162,10 @@ config_tcp_server_handler (param_t *param,
             }
             switch(enable_or_disable) {
                 case CONFIG_ENABLE:
-                    tcp_server->StopAcceptingNewConnections();
+                    tcp_server->StopConnectionsAcceptorSvc();
                     break;
                 case CONFIG_DISABLE:
-                    tcp_server->StartAcceptingNewConnections();
+                    tcp_server->StartConnectionsAcceptorSvc();
                     break;
             }             
             break;

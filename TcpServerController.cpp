@@ -548,7 +548,7 @@ TcpServerController::IsBitSet(uint32_t bit) {
 }
 
 void 
-TcpServerController::StopAcceptingNewConnections() {
+TcpServerController::StopConnectionsAcceptorSvc() {
 
     if (this->IsBitSet (TCP_SERVER_NOT_ACCEPTING_NEW_CONNECTIONS)) return;
     this->SetBit (TCP_SERVER_NOT_ACCEPTING_NEW_CONNECTIONS);
@@ -556,7 +556,7 @@ TcpServerController::StopAcceptingNewConnections() {
 }
 
 void
-TcpServerController::StartAcceptingNewConnections() {
+TcpServerController::StartConnectionsAcceptorSvc() {
 
     if (!this->IsBitSet (TCP_SERVER_NOT_ACCEPTING_NEW_CONNECTIONS)) return;
     this->UnSetBit (TCP_SERVER_NOT_ACCEPTING_NEW_CONNECTIONS);

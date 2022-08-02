@@ -469,13 +469,14 @@ TcpClientServiceManager::Stop() {
     this->StopTcpClientServiceManagerThread();
     close(this->udp_fd);
     this->udp_fd = 0;
-    Purge();
+    this->Purge();
     delete this;
 }
 
 void
 TcpClientServiceManager::StopTcpClientServiceManagerThread() {
 
+    if (!this->client_svc_mgr_thread) return;
     pthread_cancel(*this->client_svc_mgr_thread);
     pthread_join(*this->client_svc_mgr_thread, NULL);
     free(this->client_svc_mgr_thread);

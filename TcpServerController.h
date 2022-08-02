@@ -108,8 +108,8 @@ public:
     void CreateMultiThreadedClient(TcpClient *);
 
     /* Accept/No Accept of new Connections */
-    void StopAcceptingNewConnections();
-    void StartAcceptingNewConnections();
+    void StopConnectionsAcceptorSvc();
+    void StartConnectionsAcceptorSvc();
     /* Listen for Connected Clients */
     void StopClientSvcMgr();
     void StartClientSvcMgr();
