@@ -91,7 +91,7 @@ BCBRead(ByteCircularBuffer_t *bcb,
     }
 
     memcpy(buffer, BCB(bcb, bcb->rear), leading_space);
-    memcpy(buffer, BCB(bcb, 0), data_size - leading_space);
+    memcpy(buffer + leading_space, BCB(bcb, 0), data_size - leading_space);
      if (remove_read_bytes) {
          bcb->rear = (data_size - leading_space);
          bcb->current_size -= data_size;
