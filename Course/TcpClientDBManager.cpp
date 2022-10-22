@@ -35,3 +35,15 @@ TcpClientDbManager::DisplayClientDb() {
         tcp_client->Display();
     }
 }
+
+void 
+TcpClientDbManager::CopyAllClientsTolist (std::list<TcpClient *> *list) {
+
+    std::list<TcpClient *>::iterator it;
+    TcpClient *tcp_client;
+
+    for (it = this->tcp_client_db.begin(); it != this->tcp_client_db.end(); ++it) {
+        tcp_client = *it;
+        list->push_back(tcp_client);
+    }
+}

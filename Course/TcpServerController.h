@@ -52,6 +52,10 @@ class TcpServerController {
     void Display();
     void StopConnectionAcceptingSvc();
     void StartConnectionAcceptingSvc();
+    /* Listen for Connected Clients */
+    void StopClientSvcMgr();
+    void StartClientSvcMgr();
+    void CopyAllClientsTolist (std::list<TcpClient *> *list);
 };
 
 

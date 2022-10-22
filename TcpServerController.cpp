@@ -582,3 +582,9 @@ TcpServerController::StartClientSvcMgr() {
     this->tcp_client_svc_mgr->StartTcpClientServiceManagerThread();
     this->UnSetBit (TCP_SERVER_NOT_LISTENING_CLIENTS);
 }
+
+void 
+TcpServerController::CopyAllClientsTolist (std::list<TcpClient *> *list) {
+
+    this->tcp_client_db_mgr->CopyAllClientsTolist(list);
+}

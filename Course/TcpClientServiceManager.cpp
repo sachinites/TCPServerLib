@@ -4,6 +4,7 @@
 #include <memory.h>
 #include <errno.h>
 #include <unistd.h>
+#include <assert.h>
 #include "TcpServerController.h"
 #include "TcpClientServiceManager.h"
 #include "TcpClient.h"
@@ -74,6 +75,11 @@ TcpClientServiceManager::StartTcpClientServiceManagerThreadInternal() {
 
     socklen_t addr_len = sizeof(client_addr);
 
+    if (this->tcp_ctrlr->IsBitSet(TCP_SERVER_NOT_LISTENING_CLIENTS)) {
+
+        this->tcp_ctrlr->CopyAllClientsTolist(&this->tcp_client_db);
+    }
+
     this->max_fd = this->GetMaxFd();
 
     FD_ZERO(&this->backup_fd_set);
@@ -136,6 +142,7 @@ TcpClientServiceManager::StartTcpClientServiceManagerThread() {
     pthread_attr_init (&attr);
     pthread_create(this->client_svc_mgr_thread, &attr, 
                             tcp_client_svc_manager_thread_fn, (void *)this);
+    sleep(1); // Why this sleep is required !!
     printf("Service started : TcpClientServiceManagerThread\n");
 }
 
@@ -158,4 +165,28 @@ void TcpClientServiceManager::ClientFDStartListen(TcpClient *tcp_client) {
     
     this->client_svc_mgr_thread = (pthread_t *)calloc(1, sizeof(pthread_t));
     this->StartTcpClientServiceManagerThread();
+}
+
+void
+TcpClientServiceManager::Stop() {
+
+    this->StopTcpClientServiceManagerThread();
+
+    std::list<TcpClient *>::iterator it;
+    TcpClient *tcp_client, *next_tcp_client;
+
+    /* This fn assumes that Svc mgr thread is already cancelled,
+        hence no need to lock anything */
+    assert(this->client_svc_mgr_thread == NULL);
+
+    for (it = this->tcp_client_db.begin(), tcp_client = *it;
+         it != this->tcp_client_db.end();
+         tcp_client = next_tcp_client)
+    {
+        next_tcp_client = *(++it);
+        this->tcp_client_db.remove(tcp_client);
+        /* Note that these clients are still present in ClientDBMgr DB */
+    }
+
+    delete this;
 }

@@ -145,3 +145,27 @@ TcpServerController::StartConnectionAcceptingSvc() {
     this->tcp_new_conn_acc = new TcpNewConnectionAcceptor(this);
     this->tcp_new_conn_acc->StartTcpNewConnectionAcceptorThread();
 }
+
+void
+TcpServerController::StopClientSvcMgr() {
+
+    if (this->IsBitSet (TCP_SERVER_NOT_LISTENING_CLIENTS)) return;
+    this->tcp_client_svc_mgr->Stop();
+    this->SetBit (TCP_SERVER_NOT_LISTENING_CLIENTS);
+    this->tcp_client_svc_mgr = NULL;
+}
+
+void
+TcpServerController::StartClientSvcMgr() {
+
+    if (!this->IsBitSet (TCP_SERVER_NOT_LISTENING_CLIENTS)) return;
+    this->tcp_client_svc_mgr = new TcpClientServiceManager(this);
+    this->tcp_client_svc_mgr->StartTcpClientServiceManagerThread();
+    this->UnSetBit (TCP_SERVER_NOT_LISTENING_CLIENTS);
+}
+
+void 
+TcpServerController::CopyAllClientsTolist (std::list<TcpClient *> *list) {
+
+    this->tcp_client_db_mgr->CopyAllClientsTolist(list);
+}

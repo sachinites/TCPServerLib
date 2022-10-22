@@ -123,3 +123,18 @@ TcpClientDbManager::DisplayClientDb() {
     }
     pthread_rwlock_unlock(&this->rwlock);
 }
+
+void 
+TcpClientDbManager::CopyAllClientsTolist (std::list<TcpClient *> *list) {
+
+    std::list<TcpClient *>::iterator it;
+    TcpClient *tcp_client;
+
+    pthread_rwlock_rdlock(&this->rwlock);
+    for (it = this->tcp_client_db.begin(); it != this->tcp_client_db.end(); ++it) {
+        tcp_client = *it;
+        list->push_back(tcp_client);
+        tcp_client->Reference();
+    }
+    pthread_rwlock_unlock(&this->rwlock);
+}

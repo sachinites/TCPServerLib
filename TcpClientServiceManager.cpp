@@ -176,8 +176,19 @@ TcpClientServiceManager::StartTcpClientServiceManagerThreadInternal() {
 
     socklen_t addr_len = sizeof(client_addr);
 
+    if (this->tcp_ctrlr->IsBitSet(TCP_SERVER_NOT_LISTENING_CLIENTS)) {
+        
+        this->tcp_ctrlr->CopyAllClientsTolist(&this->tcp_client_db);
+
+        for (it = this->tcp_client_db.begin(); it != this->tcp_client_db.end(); ++it) {
+
+            tcp_client = *it;
+            tcp_client->SetState(TCP_CLIENT_STATE_MULTIPLEX_LISTEN);
+        }
+    }
+
     this->max_fd = this->GetMaxFd();
-  
+
     FD_ZERO(&this->backup_fd_set);
     this->CopyClientFDtoFDSet(&this->backup_fd_set);
 

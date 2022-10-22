@@ -9,6 +9,7 @@
 #define TCP_SERVER_START 2
 #define TCP_SERVER_SHOW_TCP_SERVER 3
 #define TCP_SERVER_STOP_CONN_ACCEPT 4
+#define TCP_SERVER_STOP_CLIENT_LISTEN   5
 
 static void
 print_client(const TcpClient *tcp_client) {
@@ -129,6 +130,24 @@ config_tcp_server_handler (param_t *param, ser_buff_t *ser_buff, op_mode enable_
                      tcp_server->StartConnectionAcceptingSvc();
                 break;
             }
+            break;
+        case TCP_SERVER_STOP_CLIENT_LISTEN:
+            tcp_server = TcpServer_lookup(std::string(server_name));
+            if (!tcp_server)
+            {
+                printf("Error : Tcp Server do not Exist\n");
+                return -1;
+            }
+            switch (enable_or_disable)
+            {
+            case CONFIG_ENABLE:
+                tcp_server->StopClientSvcMgr();
+                break;
+            case CONFIG_DISABLE:
+                tcp_server->StartClientSvcMgr();
+                break;
+            }
+            break;
         default:;
     }
 
@@ -190,6 +209,13 @@ tcp_build_config_cli_tree() {
                 init_param(&dis_conn_accept, CMD, "disable-conn-accept", config_tcp_server_handler, 0, INVALID, 0, "Connection Accept Settings");
                 libcli_register_param(&tcp_server_name, &dis_conn_accept);
                 set_param_cmd_code(&dis_conn_accept, TCP_SERVER_STOP_CONN_ACCEPT);                     
+            }
+            {
+                /* config tcp-server <name> [no] disable-client-listen */
+                static param_t disable_client_listen;
+                init_param(&disable_client_listen, CMD, "disable-client-listen", config_tcp_server_handler, 0, INVALID, 0, "Listening  Settings");
+                libcli_register_param(&tcp_server_name, &disable_client_listen);
+                set_param_cmd_code(&disable_client_listen, TCP_SERVER_STOP_CLIENT_LISTEN);
             }
             {
                 /* config tcp-server <name> [<ip-addr>] ...*/
