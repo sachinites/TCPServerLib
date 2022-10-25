@@ -62,7 +62,6 @@ void TcpClientDbManager::Purge()
         next_tcp_client = *(++it);
 
         this->tcp_client_db.remove(tcp_client);
-        close(tcp_client->comm_fd);
-        delete tcp_client;
+        tcp_client->Abort();
     }
 }
