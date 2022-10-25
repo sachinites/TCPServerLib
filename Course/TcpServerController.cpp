@@ -21,6 +21,13 @@ TcpServerController::TcpServerController(
     this->SetBit (TCP_SERVER_INITIALIZED);
 }
 
+TcpServerController::~TcpServerController() {
+
+    assert(!this->tcp_new_conn_acc);
+    assert(!this->tcp_client_db_mgr);
+    assert(!this->tcp_client_svc_mgr);
+}
+
 void
 TcpServerController::Start() {
 
@@ -168,4 +175,30 @@ void
 TcpServerController::CopyAllClientsTolist (std::list<TcpClient *> *list) {
 
     this->tcp_client_db_mgr->CopyAllClientsTolist(list);
+}
+
+void
+TcpServerController::Stop() {
+ 
+    TcpClient *tcp_client;
+ 
+    if (this->tcp_new_conn_acc) {
+        this->StopConnectionAcceptingSvc();
+        this->SetBit (TCP_SERVER_NOT_ACCEPTING_NEW_CONNECTIONS);
+    }
+ 
+    if (this->tcp_client_svc_mgr) {
+        this->StopClientSvcMgr();
+        this->SetBit (TCP_SERVER_NOT_LISTENING_CLIENTS);
+    }
+ 
+    /* Stopping the above two services first ensures that
+        now no thread is alive which could add tcpclient back into
+        DB */
+    this->tcp_client_db_mgr->Purge();
+    delete this->tcp_client_db_mgr;
+    this->tcp_client_db_mgr = NULL;
+ 
+    this->UnSetBit(TCP_SERVER_RUNNING);
+    delete this;
 }
