@@ -3,6 +3,8 @@
 #include <netinet/in.h> // for IPPROTO_TCP
 #include <memory.h>
 #include <unistd.h>
+#include <stdlib.h>
+#include <errno.h>
 #include "TcpServerController.h"
 #include "TcpNewConnectionAcceptor.h"
 #include "network_utils.h"

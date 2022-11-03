@@ -1,5 +1,6 @@
 #ifndef __TcpClientServiceManager__
 #define __TcpClientServiceManager__
+#include <sys/select.h>
 
 class TcpServerController;
 class TcpClient;

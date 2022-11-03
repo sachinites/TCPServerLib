@@ -122,6 +122,7 @@ public:
     void EnqueMsg (tcp_server_msg_code_t code, void *data, bool block_me);
     void CreateActiveClient (uint32_t server_ip_addr, uint16_t server_port_no);
     void CopyAllClientsTolist (std::list<TcpClient *> *list);
+    TcpClient *LookupActiveOpened (uint32_t ip_addr, uint16_t port_no);
 };
 
 

@@ -63,9 +63,10 @@ typedef struct tlv_struct{
     strncpy(tlvptr->leaf_id, leaf->leaf_id, MIN(LEAF_ID_SIZE, strlen(leaf->leaf_id)));
 
 #define put_value_in_tlv(tlvptr, _val)         \
-    strncpy(tlvptr->value, _val, MIN(LEAF_VALUE_HOLDER_SIZE, strlen(_val)));
+    strncpy(tlvptr->value, _val, MIN(LEAF_VALUE_HOLDER_SIZE, strlen(_val))); \
+    tlvptr->value[MIN(LEAF_VALUE_HOLDER_SIZE, strlen(_val))] = '\0';
 
-static inline void 
+static inline void
 print_tlv_content(tlv_struct_t *tlv){
 
     if(!tlv)

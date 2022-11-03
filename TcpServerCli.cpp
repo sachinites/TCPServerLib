@@ -290,10 +290,93 @@ tcp_build_config_cli_tree() {
     }
     support_cmd_negation(config_hook);
 }
+
+static int
+run_tcp_server_handler (param_t *param,
+                                             ser_buff_t *tlv_buf, 
+                                             op_mode enable_or_disable) {
+
+    const char *tcp_server_name = NULL;
+    char *msg = NULL;
+    tlv_struct_t *tlv = NULL;
+    const char *remote_ip_addr = NULL;
+    uint16_t remote_port = 0;
+    TcpServerController *tcp_server = NULL;
+
+    int CMDCODE = EXTRACT_CMD_CODE(tlv_buf);
+
+     TLV_LOOP_BEGIN(tlv_buf, tlv){
+
+        if     (strncmp(tlv->leaf_id, "tcp-server-name", strlen("tcp-server-name")) ==0)
+            tcp_server_name = tlv->value;
+        else if (strncmp(tlv->leaf_id, "msg", strlen("msg")) ==0)
+            msg = tlv->value;
+        else if (strncmp(tlv->leaf_id, "remote-addr", strlen("remote-addr")) ==0)
+            remote_ip_addr =  tlv->value;
+        else if (strncmp(tlv->leaf_id, "remote-port", strlen("remote-port")) ==0)
+            remote_port = atoi(tlv->value);
+        else
+            assert(0);
+     } TLV_LOOP_END;
+
+    switch (CMDCODE) {
+        case RUN_CMD_CODE_TCP_SERVER_SENDMSG:
+            tcp_server = TcpServer_lookup(std::string(tcp_server_name));
+            if (!tcp_server) {
+                printf ("Error : Tcp Server do not Exist\n");
+                return -1;
+            }
+            TcpClient *tcp_client ;
+            tcp_client = tcp_server->LookupActiveOpened(
+                network_covert_ip_p_to_n(remote_ip_addr), remote_port);
+            if (!tcp_client) {
+                printf ("Error : Remote Machine Connection not found\n");
+                return -1;
+            }
+            tcp_client->SendMsg(msg, strlen(msg));
+            break;
+        default: ;
+    }
+    return 0;
+}
+
 static void
 tcp_build_run_cli_tree() {
 
     param_t *run_hook = libcli_get_run_hook();
+    /* run tcp-server ... */
+    static param_t tcp_server;
+    init_param(&tcp_server, CMD, "tcp-server", 0, 0, INVALID, 0, "run tcp-server");
+    libcli_register_param(run_hook, &tcp_server);
+    {
+        /*run  tcp-server <name> */
+        static param_t tcp_server_name;
+        init_param(&tcp_server_name, LEAF, 0, NULL, 0, STRING, "tcp-server-name", "TCP Server name");
+        libcli_register_param(&tcp_server, &tcp_server_name);
+        {
+            /*run  tcp-server <name> send-msg ...*/
+            static param_t send_msg;
+            init_param(&send_msg, CMD, "send-msg", 0, 0, INVALID, 0, "Send Msg");
+            libcli_register_param(&tcp_server_name, &send_msg);
+            {
+                /*run  tcp-server <name> send-msg <test-msg> <remote-ip-addr> <remote-port>*/
+                static param_t remote_machine_addr;
+                init_param(&remote_machine_addr, LEAF, 0, 0, 0, IPV4, "remote-addr", "Remote IPV4 address");
+                libcli_register_param(&send_msg, &remote_machine_addr);
+                {
+                    static param_t remote_machine_port;
+                    init_param(&remote_machine_port, LEAF, 0, NULL, 0, INT, "remote-port", "Remote Port Number");
+                    libcli_register_param(&remote_machine_addr, &remote_machine_port);
+                    {
+                        static param_t msg;
+                        init_param(&msg, LEAF, 0, run_tcp_server_handler, 0, STRING, "msg", "Message to be Sent");
+                        libcli_register_param(&remote_machine_port, &msg);
+                        set_param_cmd_code(&msg, RUN_CMD_CODE_TCP_SERVER_SENDMSG);
+                    }
+                }
+            }
+        }
+    }
 }
 
 static int

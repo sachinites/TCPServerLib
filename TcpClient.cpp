@@ -55,12 +55,7 @@ TcpClient::SendMsg(char *msg, uint32_t msg_size) {
 
     if (this->comm_fd == 0) return -1;
 
-    struct sockaddr_in dest;
-    dest.sin_family = AF_INET;
-    dest.sin_port = htons(this->tcp_ctrlr->port_no);
-    dest.sin_addr.s_addr = htonl(this->ip_addr);
-    int rc = sendto(this->comm_fd, msg, msg_size, 0, 
-	     (struct sockaddr *)&dest, sizeof(struct sockaddr));
+    int rc = sendto(this->comm_fd, msg, msg_size, 0, NULL, 0);
     if (rc < 0) {
         printf ("sendto failed\n");
         return rc;

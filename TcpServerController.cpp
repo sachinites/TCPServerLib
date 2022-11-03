@@ -1,6 +1,8 @@
 #include <assert.h>
 #include <arpa/inet.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <memory.h>
 #include "TcpServerController.h"
 #include "TcpNewConnectionAcceptor.h"
 #include "TcpClientDbManager.h"
@@ -587,4 +589,28 @@ void
 TcpServerController::CopyAllClientsTolist (std::list<TcpClient *> *list) {
 
     this->tcp_client_db_mgr->CopyAllClientsTolist(list);
+}
+
+TcpClient *
+TcpServerController::LookupActiveOpened(uint32_t ip_addr, uint16_t port_no)
+{
+
+    TcpClient *tcp_client = NULL;
+    std::list<TcpClient *>::iterator it;
+
+    pthread_rwlock_rdlock(&this->connect_db_rwlock);
+
+    for (it = this->establishedClient.begin(); it != this->establishedClient.end(); ++it)
+    {
+
+        tcp_client = *it;
+        if (tcp_client->server_ip_addr == ip_addr &&
+            tcp_client->server_port_no == port_no)
+        {
+            pthread_rwlock_unlock(&this->connect_db_rwlock);
+            return tcp_client;
+        }
+    }
+    pthread_rwlock_unlock(&this->connect_db_rwlock);
+    return NULL;
 }

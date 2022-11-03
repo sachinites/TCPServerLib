@@ -26,4 +26,6 @@
 #define TCP_CLIENT_DISCONNECT   3 // run tcp-client <name> disconnect
 #define TCP_CLIENT_SHOW_STATE   4 // show tcp-client <name>
 
+/* Run Commands */
+#define RUN_CMD_CODE_TCP_SERVER_SENDMSG 1
 #endif 
