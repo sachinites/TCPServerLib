@@ -17,13 +17,12 @@ class TcpClientServiceManager{
         std::list<TcpClient *>tcp_client_db;
         fd_set active_fd_set;
         fd_set backup_fd_set;
-        int GetMaxFd();
-        int GetMaxFd2();
+        int GetMaxFdSimple();
+        int GetMaxFdAdv();
         pthread_t *client_svc_mgr_thread;
         sem_t wait_for_thread_operation_to_complete;
         sem_t sem0_1, sem0_2;
         pthread_rwlock_t rwlock;
-        bool listen_clients; 
         void ForceUnblockSelect();
         void TcpClientMigrate(TcpClient *);
         void Purge();
@@ -34,18 +33,18 @@ class TcpClientServiceManager{
         ~TcpClientServiceManager();
 
         void StartTcpClientServiceManagerThread();
-        void StartTcpClientServiceManagerThreadInternal();
+        void StartTcpClientServiceManagerThreadInternalSimple();
         void StartTcpClientServiceManagerThreadInternal2();
         void StopTcpClientServiceManagerThread();
-        void ClientFDStartListen(TcpClient *);
-        void ClientFDStartListen2(TcpClient *); 
+        void ClientFDStartListenSimple(TcpClient *);
+        void ClientFDStartListenAdv(TcpClient *); 
         void RemoveClientFromDB(TcpClient *);
         void AddClientToDB(TcpClient *);
-        TcpClient* ClientFDStopListen(uint32_t , uint16_t);
-        void ClientFDStopListen(TcpClient *);
+        TcpClient* ClientFDStopListenAdv(uint32_t , uint16_t);
+        void ClientFDStopListenAdv(TcpClient *);
+        void ClientFDStopListenSimple(TcpClient *);
         TcpClient* LookUpClientDB(uint32_t , uint16_t);
         void Stop();
-        void SetListenAllClientsStatus(bool status);
 };
 
 #endif 

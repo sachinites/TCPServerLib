@@ -111,7 +111,9 @@ TcpServerController::Stop() {
 
         tcp_client = this->establishedClient.front();
         assert (tcp_client->IsStateSet (TCP_CLIENT_STATE_CONNECTED));
-        tcp_client->StopThread();
+        if (tcp_client->IsStateSet(TCP_CLIENT_STATE_THREADED)) {
+            tcp_client->StopThread();
+        }
         this->establishedClient.pop_front();
         tcp_client->Dereference();
     }
@@ -184,7 +186,7 @@ TcpServerController::ProcessNewClient(TcpClient *tcp_client) {
     }
     else {
 
-        this->tcp_client_svc_mgr->ClientFDStartListen(tcp_client);
+        this->tcp_client_svc_mgr->ClientFDStartListenSimple(tcp_client);
     }
 }
 
@@ -200,7 +202,7 @@ TcpServerController::ProcessClientDelete(uint32_t ip_addr, uint16_t port_no) {
     }
 
     if (!tcp_client->client_thread) {
-        this->tcp_client_svc_mgr->ClientFDStopListen(tcp_client);
+        this->tcp_client_svc_mgr->ClientFDStopListenSimple(tcp_client);
     }
 }
 
@@ -214,7 +216,7 @@ TcpServerController::ProcessClientDelete(TcpClient *tcp_client) {
     }
     
     if (tcp_client->IsStateSet (TCP_CLIENT_STATE_MULTIPLEX_LISTEN)) {
-        this->tcp_client_svc_mgr->ClientFDStopListen(tcp_client);
+        this->tcp_client_svc_mgr->ClientFDStopListenSimple(tcp_client);
     }
 
     if (tcp_client->client_thread) {
@@ -248,7 +250,7 @@ TcpServerController::RemoveClientFromDB(TcpClient *tcp_client) {
 void
 TcpServerController::ClientFDStartListen(TcpClient *tcp_client) {
 
-    this->tcp_client_svc_mgr->ClientFDStartListen(tcp_client);
+    this->tcp_client_svc_mgr->ClientFDStartListenSimple(tcp_client);
 }
 
 void
@@ -264,7 +266,7 @@ TcpServerController::ProcessClientMigrationToMultiThreaded(uint32_t ip_addr, uin
         return;
     }
 
-    this->tcp_client_svc_mgr->ClientFDStopListen(tcp_client);
+    this->tcp_client_svc_mgr->ClientFDStopListenSimple(tcp_client);
     this->CreateMultiThreadedClient(tcp_client);
 }
 
@@ -282,7 +284,7 @@ TcpServerController::ProcessClientMigrationToMultiplex(uint32_t ip_addr, uint16_
     }
 
     tcp_client->StopThread();
-    this->tcp_client_svc_mgr->ClientFDStartListen(tcp_client);
+    this->tcp_client_svc_mgr->ClientFDStartListenSimple(tcp_client);
 }
 
 void 
@@ -393,7 +395,7 @@ TcpServerController::ProcessMsgQMsg(TcpServerMsg_t *msg) {
     if (msg->code & CTRLR_ACTION_TCP_CLIENT_MULTIPLEX_LISTEN) {
 
             assert (!tcp_client->IsStateSet (TCP_CLIENT_STATE_MULTIPLEX_LISTEN));
-            this->tcp_client_svc_mgr->ClientFDStartListen(tcp_client);
+            this->tcp_client_svc_mgr->ClientFDStartListenSimple(tcp_client);
     }
     
     if (msg->code & CTRLR_ACTION_TCP_CLIENT_MX_TO_MULTITHREADED) {
@@ -402,7 +404,7 @@ TcpServerController::ProcessMsgQMsg(TcpServerMsg_t *msg) {
 
         if (tcp_client->IsStateSet(TCP_CLIENT_STATE_MULTIPLEX_LISTEN)) {
 
-            this->tcp_client_svc_mgr->ClientFDStopListen(tcp_client);
+            this->tcp_client_svc_mgr->ClientFDStopListenSimple(tcp_client);
         }
 
         this->CreateMultiThreadedClient(tcp_client);
@@ -417,7 +419,7 @@ TcpServerController::ProcessMsgQMsg(TcpServerMsg_t *msg) {
             tcp_client->StopThread();
          }
 
-        this->tcp_client_svc_mgr->ClientFDStartListen(tcp_client);
+        this->tcp_client_svc_mgr->ClientFDStartListenSimple(tcp_client);
     }
 
     if (msg->code & CTRLR_ACTION_TCP_CLIENT_CREATE_THREADED) {
@@ -428,6 +430,7 @@ TcpServerController::ProcessMsgQMsg(TcpServerMsg_t *msg) {
 
     if (msg->code & CTRLR_ACTION_TCP_CLIENT_ACTIVE_CONNECT_SUCCESS) {
 
+        tcp_server_msg_code_t ctrlr_code = (tcp_server_msg_code_t)0;
         assert (!tcp_client->IsStateSet (TCP_CLIENT_STATE_CONNECT_IN_PROGRESS));
         assert (tcp_client->IsStateSet (TCP_CLIENT_STATE_CONNECTED));
         assert (!tcp_client->IsStateSet (TCP_CLIENT_STATE_PASSIVE_OPENER));
@@ -438,8 +441,15 @@ TcpServerController::ProcessMsgQMsg(TcpServerMsg_t *msg) {
         this->connectpendingClients.remove(tcp_client);
         this->establishedClient.push_back(tcp_client);
         pthread_rwlock_unlock (&this->connect_db_rwlock);
-        this->CreateMultiThreadedClient(tcp_client);
+        if (this->IsBitSet(TCP_SERVER_CREATE_MULTI_THREADED_CLIENT)) {
+            this->CreateMultiThreadedClient(tcp_client);
+        }
+        else {
+            this->ClientFDStartListen(tcp_client); 
+        }  
     }
+
+    free(msg);
 }
 
 void 
@@ -463,7 +473,6 @@ TcpServerController::MsgQProcessingThreadFn() {
             if (msg->zero_sema) {
                 sem_post(msg->zero_sema);
             }
-            free(msg);
         }
 
         pthread_mutex_unlock(&this->msgq_mutex);
@@ -506,6 +515,7 @@ TcpServerController::EnqueMsg (tcp_server_msg_code_t code, void *data, bool bloc
 void 
 TcpServerController::CreateActiveClient (uint32_t server_ip_addr, uint16_t server_port_no) {
 
+    tcp_server_msg_code_t ctrlr_code = (tcp_server_msg_code_t)0;
     TcpClient *tcp_client = new TcpClient ();
     tcp_client->server_ip_addr = server_ip_addr;
     tcp_client->server_port_no = server_port_no;
@@ -526,8 +536,12 @@ TcpServerController::CreateActiveClient (uint32_t server_ip_addr, uint16_t serve
         this->connectpendingClients.remove(tcp_client);
         this->establishedClient.push_back(tcp_client);
         pthread_rwlock_unlock (&this->connect_db_rwlock);
-        assert (!tcp_client->IsStateSet (TCP_CLIENT_STATE_THREADED));
-        this->CreateMultiThreadedClient(tcp_client);
+        if (this->IsBitSet(TCP_SERVER_CREATE_MULTI_THREADED_CLIENT)) {
+            this->CreateMultiThreadedClient(tcp_client);
+        }
+        else {
+            this->ClientFDStartListen(tcp_client); 
+        }        
     }
 }
 

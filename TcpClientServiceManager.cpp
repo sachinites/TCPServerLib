@@ -90,6 +90,7 @@ TcpClientServiceManager::CopyClientFDtoFDSet(fd_set *fdset) {
 }
 
 /* Deprecated */
+
 void
 TcpClientServiceManager::StartTcpClientServiceManagerThreadInternal2() {
 
@@ -138,7 +139,7 @@ TcpClientServiceManager::StartTcpClientServiceManagerThreadInternal2() {
                     this->RemoveClientFromDB(tcp_client);
                     tcp_client->UnSetState (TCP_CLIENT_STATE_MULTIPLEX_LISTEN);
                     tcp_client->UnSetState (TCP_CLIENT_STATE_CONNECTED);
-                    this->max_fd = this->GetMaxFd();
+                    this->max_fd = this->GetMaxFdSimple();
                     this->tcp_ctrlr->EnqueMsg(CTRLR_ACTION_TCP_CLIENT_DELETE, (void *)tcp_client, false);
                     tcp_client->Dereference();
                 }
@@ -165,9 +166,8 @@ TcpClientServiceManager::StartTcpClientServiceManagerThreadInternal2() {
     } // while ends
 }
 
-
 void
-TcpClientServiceManager::StartTcpClientServiceManagerThreadInternal() {
+TcpClientServiceManager::StartTcpClientServiceManagerThreadInternalSimple() {
 
     int rcv_bytes;
     TcpClient *tcp_client, *next_tcp_client;
@@ -176,18 +176,11 @@ TcpClientServiceManager::StartTcpClientServiceManagerThreadInternal() {
 
     socklen_t addr_len = sizeof(client_addr);
 
-    if (this->tcp_ctrlr->IsBitSet(TCP_SERVER_NOT_LISTENING_CLIENTS)) {
-        
+    if (!this->tcp_ctrlr->IsBitSet(TCP_SERVER_NOT_LISTENING_CLIENTS)) {
         this->tcp_ctrlr->CopyAllClientsTolist(&this->tcp_client_db);
-
-        for (it = this->tcp_client_db.begin(); it != this->tcp_client_db.end(); ++it) {
-
-            tcp_client = *it;
-            tcp_client->SetState(TCP_CLIENT_STATE_MULTIPLEX_LISTEN);
-        }
     }
 
-    this->max_fd = this->GetMaxFd();
+    this->max_fd = this->GetMaxFdSimple();
 
     FD_ZERO(&this->backup_fd_set);
     this->CopyClientFDtoFDSet(&this->backup_fd_set);
@@ -221,12 +214,8 @@ TcpClientServiceManager::StartTcpClientServiceManagerThreadInternal() {
                     this->tcp_ctrlr->client_disconnected(this->tcp_ctrlr, tcp_client);
                     /* Remove FD from fd_set otherwise, select will go in infinite loop*/
                     FD_CLR(tcp_client->comm_fd, &this->backup_fd_set);
-                    tcp_client->Reference();
-                    this->RemoveClientFromDB(tcp_client);
-                    tcp_client->UnSetState (TCP_CLIENT_STATE_MULTIPLEX_LISTEN);
-                    this->max_fd = this->GetMaxFd();
-                    this->tcp_ctrlr->EnqueMsg(CTRLR_ACTION_TCP_CLIENT_DELETE, (void *)tcp_client, false);
-                    tcp_client->Dereference();
+                    this->max_fd = this->GetMaxFdSimple();
+                    this->tcp_ctrlr->EnqueMsg(CTRLR_ACTION_TCP_CLIENT_RECONNECT, (void *)tcp_client, false);
                 }
                 else {
                     /* If client has a TcpMsgDemarcar, then push the data to Demarcar, else notify the application straightaway */
@@ -252,7 +241,7 @@ static void *
      pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
      pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
 
-     svc_mgr->StartTcpClientServiceManagerThreadInternal();
+     svc_mgr->StartTcpClientServiceManagerThreadInternalSimple();
      return NULL;
  }
 
@@ -275,14 +264,6 @@ TcpClientServiceManager::StartTcpClientServiceManagerThread() {
     printf("Service started : TcpClientServiceManagerThread\n");
 }
 
-void
-TcpClientServiceManager::SetListenAllClientsStatus(bool status) {
-
-    pthread_rwlock_wrlock(&this->rwlock);
-    this->listen_clients = status;
-    pthread_rwlock_unlock(&this->rwlock);
-}
-
 TcpClient * 
 TcpClientServiceManager::LookUpClientDB(uint32_t ip_addr, uint16_t port_no) {
 
@@ -298,8 +279,9 @@ TcpClientServiceManager::LookUpClientDB(uint32_t ip_addr, uint16_t port_no) {
     return NULL;
 }
 
+/* Not used in the Project*/
 void
-TcpClientServiceManager::ClientFDStartListen2(TcpClient *tcp_client) {
+TcpClientServiceManager::ClientFDStartListenAdv(TcpClient *tcp_client) {
 
     ForceUnblockSelect();
     
@@ -318,7 +300,7 @@ TcpClientServiceManager::ClientFDStartListen2(TcpClient *tcp_client) {
 }
 
 void
-TcpClientServiceManager::ClientFDStartListen(TcpClient *tcp_client) {
+TcpClientServiceManager::ClientFDStartListenSimple(TcpClient *tcp_client) {
 
     if (!this->tcp_ctrlr->IsBitSet (TCP_SERVER_NOT_LISTENING_CLIENTS)) {
         this->StopTcpClientServiceManagerThread();
@@ -334,7 +316,7 @@ TcpClientServiceManager::ClientFDStartListen(TcpClient *tcp_client) {
 
 /* Overloaded fn */
 TcpClient*
-TcpClientServiceManager::ClientFDStopListen(uint32_t ip_addr, uint16_t port_no) {
+TcpClientServiceManager::ClientFDStopListenAdv(uint32_t ip_addr, uint16_t port_no) {
 
     TcpClient *tcp_client;
 
@@ -352,7 +334,7 @@ TcpClientServiceManager::ClientFDStopListen(uint32_t ip_addr, uint16_t port_no) 
     this->RemoveClientFromDB(tcp_client);
     tcp_client->UnSetState (TCP_CLIENT_STATE_MULTIPLEX_LISTEN);
     /* Now Update FDs */
-    max_fd = GetMaxFd();
+    max_fd = GetMaxFdSimple();
 
     FD_CLR(tcp_client->comm_fd, &this->backup_fd_set);
     this->tcp_ctrlr->client_disconnected(this->tcp_ctrlr, tcp_client);
@@ -361,7 +343,7 @@ TcpClientServiceManager::ClientFDStopListen(uint32_t ip_addr, uint16_t port_no) 
 }
 
 void
-TcpClientServiceManager::ClientFDStopListen(TcpClient *tcp_client) {
+TcpClientServiceManager::ClientFDStopListenAdv(TcpClient *tcp_client) {
 
     ForceUnblockSelect();
 
@@ -374,15 +356,32 @@ TcpClientServiceManager::ClientFDStopListen(TcpClient *tcp_client) {
     tcp_client->UnSetState (TCP_CLIENT_STATE_MULTIPLEX_LISTEN);
 
     /* Now Update FDs */
-    max_fd = GetMaxFd();
+    max_fd = GetMaxFdSimple();
 
     FD_CLR(tcp_client->comm_fd, &this->backup_fd_set);
     this->tcp_ctrlr->client_disconnected(this->tcp_ctrlr, tcp_client);
     sem_post(&this->sem0_2);
 }
 
+void
+TcpClientServiceManager::ClientFDStopListenSimple(TcpClient *tcp_client) {
+
+    if (!this->tcp_ctrlr->IsBitSet (TCP_SERVER_NOT_LISTENING_CLIENTS)) {
+        this->StopTcpClientServiceManagerThread();
+    }
+
+    assert(this->LookUpClientDB(tcp_client->ip_addr, tcp_client->port_no));
+    this->RemoveClientFromDB(tcp_client);
+    tcp_client->UnSetState (TCP_CLIENT_STATE_MULTIPLEX_LISTEN);
+
+    if (!this->tcp_ctrlr->IsBitSet (TCP_SERVER_NOT_LISTENING_CLIENTS)) {
+        this->StartTcpClientServiceManagerThread();
+    }
+
+}
+
 int
-TcpClientServiceManager::GetMaxFd() {
+TcpClientServiceManager::GetMaxFdSimple() {
 
     int max_fd_lcl = 0;
 
@@ -401,7 +400,7 @@ TcpClientServiceManager::GetMaxFd() {
 
 /* Deprecated */
 int
-TcpClientServiceManager::GetMaxFd2() {
+TcpClientServiceManager::GetMaxFdAdv() {
 
     int max_fd_lcl = 0;
 
@@ -492,4 +491,5 @@ TcpClientServiceManager::StopTcpClientServiceManagerThread() {
     pthread_join(*this->client_svc_mgr_thread, NULL);
     free(this->client_svc_mgr_thread);
     this->client_svc_mgr_thread = NULL;
+    printf ("Service stopped : TcpClientServiceManagerThread\n");
 }
